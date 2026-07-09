@@ -29,7 +29,10 @@ export default function Sidebar({ startupHealth = 86, runwayMonths = 14 }: Sideb
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[210px] bg-[#111111] border-r border-[#1e1e1e] flex flex-col z-20">
       {/* Logo */}
-      <Link to="/dashboard" className="flex items-center gap-2.5 px-5 h-[60px] border-b border-[#1e1e1e] hover:bg-[#1a1a1a] transition-colors">
+      <Link
+        to="/dashboard"
+        className="flex items-center gap-2.5 px-5 h-[60px] border-b border-[#1e1e1e] hover:bg-[#1a1a1a] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-inset active:scale-[0.98]"
+      >
         <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
           <span className="text-white font-bold text-sm">F</span>
         </div>
@@ -45,13 +48,14 @@ export default function Sidebar({ startupHealth = 86, runwayMonths = 14 }: Sideb
               key={id}
               to={path}
               className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
+                'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 cursor-pointer',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]',
                 isActive
                   ? 'bg-[#1e1e1e] text-white'
-                  : 'text-[#6b7280] hover:text-[#9ca3af] hover:bg-[#161616]'
+                  : 'text-[#6b7280] hover:text-white hover:bg-[#161616]'
               )}
             >
-              <Icon size={16} className={isActive ? 'text-orange-400' : ''} />
+              <Icon size={16} className={cn('transition-colors', isActive ? 'text-orange-400' : 'group-hover:text-orange-400')} />
               <span className="font-medium">{label}</span>
             </Link>
           );
@@ -84,10 +88,11 @@ export default function Sidebar({ startupHealth = 86, runwayMonths = 14 }: Sideb
         <Link
           to="/settings"
           className={cn(
-            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
+            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 cursor-pointer',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]',
             location.pathname === '/settings'
               ? 'bg-[#1e1e1e] text-white'
-              : 'text-[#6b7280] hover:text-[#9ca3af] hover:bg-[#161616]'
+              : 'text-[#6b7280] hover:text-white hover:bg-[#161616]'
           )}
         >
           <Settings size={16} />
@@ -96,7 +101,7 @@ export default function Sidebar({ startupHealth = 86, runwayMonths = 14 }: Sideb
 
         <button
           onClick={signOut}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[#6b7280] hover:text-red-400 hover:bg-[#161616] transition-all duration-150"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[#6b7280] hover:text-red-400 hover:bg-[#161616] transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
         >
           <LogOut size={16} />
           <span className="font-medium">Sign Out</span>

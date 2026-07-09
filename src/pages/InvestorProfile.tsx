@@ -90,7 +90,7 @@ export default function InvestorProfile() {
       <div className="p-6 min-h-screen flex flex-col items-center justify-center">
         <AlertCircle size={48} className="text-[#4b5563] mb-4" />
         <p className="text-white text-lg font-medium mb-2">{error || 'Investor not found'}</p>
-        <Link to="/investors" className="text-orange-400 hover:text-orange-300 text-sm">
+        <Link to="/investors" className="text-orange-400 hover:text-orange-300 text-sm transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded">
           Back to Investors
         </Link>
       </div>
@@ -112,7 +112,7 @@ export default function InvestorProfile() {
     <div className="p-6 min-h-screen">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm mb-2">
-        <button onClick={() => navigate('/investors')} className="text-[#6b7280] hover:text-white transition-colors flex items-center gap-1">
+        <button onClick={() => navigate('/investors')} className="text-[#6b7280] hover:text-white transition-colors flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded">
           <ArrowLeft size={14} />
           Investors
         </button>
@@ -124,10 +124,10 @@ export default function InvestorProfile() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-white">Command Dossier</h1>
         <div className="flex items-center gap-2">
-          <button className="bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-orange-400 transition-colors">
+          <button className="bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-orange-400 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]">
             Engagement Timeline
           </button>
-          <button className="bg-[#161616] border border-[#1e1e1e] text-[#9ca3af] text-sm font-medium px-4 py-2 rounded-lg hover:text-white transition-colors">
+          <button className="bg-[#161616] border border-[#1e1e1e] text-[#9ca3af] text-sm font-medium px-4 py-2 rounded-lg hover:text-white hover:border-[#2a2a2a] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
             Intelligence Hub
           </button>
         </div>

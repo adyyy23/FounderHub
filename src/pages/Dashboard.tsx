@@ -117,8 +117,8 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center bg-[#161616] border border-[#1e1e1e] rounded-lg p-1">
-          <button className="bg-orange-500 text-white text-xs font-semibold px-4 py-1.5 rounded-md">Variant A</button>
-          <button className="text-[#6b7280] text-xs font-semibold px-4 py-1.5 rounded-md hover:text-white transition-colors">Variant B</button>
+          <button className="bg-orange-500 text-white text-xs font-semibold px-4 py-1.5 rounded-md cursor-default">Variant A</button>
+          <button className="text-[#6b7280] text-xs font-semibold px-4 py-1.5 rounded-md hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Variant B</button>
         </div>
       </div>
 
@@ -203,7 +203,7 @@ export default function Dashboard() {
           </p>
           <Link
             to="/goals"
-            className="flex items-center gap-2 bg-[#1e1e1e] hover:bg-[#252525] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-[#1e1e1e] hover:bg-[#252525] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
           >
             {topGoal ? 'View All Goals' : 'Add Goal'}
             <ArrowRight size={14} />
@@ -222,7 +222,7 @@ export default function Dashboard() {
           </div>
           {investors[0] ? (
             <>
-              <Link to={`/investors/${investors[0].id}`} className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
+              <Link to={`/investors/${investors[0].id}`} className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg p-0.5 -m-0.5">
                 {investors[0].avatar_url ? (
                   <img src={investors[0].avatar_url} alt={investors[0].name} className="w-7 h-7 rounded-full object-cover" />
                 ) : (
@@ -251,7 +251,7 @@ export default function Dashboard() {
               <p className="text-[#6b7280] text-sm mb-3">No investors in pipeline yet</p>
               <Link
                 to="/investors"
-                className="text-orange-400 text-xs font-medium hover:text-orange-300"
+                className="text-orange-400 text-xs font-medium hover:text-orange-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
               >
                 Add your first investor
               </Link>
@@ -263,14 +263,14 @@ export default function Dashboard() {
         <div className="bg-[#141414] border border-[#1e1e1e] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-widest">Key Investors</span>
-            <Link to="/investors" className="text-orange-400 text-xs font-medium hover:text-orange-300 transition-colors">
+            <Link to="/investors" className="text-orange-400 text-xs font-medium hover:text-orange-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded">
               View All
             </Link>
           </div>
           {investors.length > 0 ? (
             <div className="space-y-3">
               {investors.map((inv) => (
-                <Link key={inv.id} to={`/investors/${inv.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <Link key={inv.id} to={`/investors/${inv.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg p-1 -m-1">
                   {inv.avatar_url ? (
                     <img src={inv.avatar_url} alt={inv.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                   ) : (
@@ -390,7 +390,7 @@ export default function Dashboard() {
               <p className="text-[#6b7280] text-xs">No recent activity</p>
             </div>
           )}
-          <Link to="/roadmap" className="mt-4 text-xs text-[#6b7280] hover:text-white flex items-center gap-1.5 transition-colors">
+          <Link to="/roadmap" className="mt-4 text-xs text-[#6b7280] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded">
             View full activity log
             <ArrowRight size={12} />
           </Link>
@@ -399,10 +399,10 @@ export default function Dashboard() {
 
       {/* Bottom Nav Icons */}
       <div className="mt-6 flex items-center gap-4">
-        <Link to="/roadmap" className="flex-1 bg-[#141414] border border-[#1e1e1e] rounded-xl py-3 flex flex-col items-center gap-1 text-[#6b7280] hover:text-white transition-colors">
+        <Link to="/roadmap" className="flex-1 bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-xl py-3 flex flex-col items-center gap-1 text-[#6b7280] hover:text-white transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]">
           <span className="text-xs font-medium">ROADMAP</span>
         </Link>
-        <Link to="/metrics" className="flex-1 bg-[#141414] border border-[#1e1e1e] rounded-xl py-3 flex flex-col items-center gap-1 text-[#6b7280] hover:text-white transition-colors">
+        <Link to="/metrics" className="flex-1 bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-xl py-3 flex flex-col items-center gap-1 text-[#6b7280] hover:text-white transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]">
           <span className="text-xs font-medium">METRICS</span>
         </Link>
       </div>
@@ -410,9 +410,9 @@ export default function Dashboard() {
       {/* Footer */}
       <footer className="mt-8 pt-4 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
         <span>2024 FounderHub Mission Control</span>
-        <a href="#" className="hover:text-[#6b7280] transition-colors">Privacy Policy</a>
-        <a href="#" className="hover:text-[#6b7280] transition-colors">Terms of Service</a>
-        <a href="#" className="hover:text-[#6b7280] transition-colors">Support</a>
+        <span className="cursor-not-allowed opacity-60">Privacy Policy</span>
+        <span className="cursor-not-allowed opacity-60">Terms of Service</span>
+        <span className="cursor-not-allowed opacity-60">Support</span>
       </footer>
     </div>
   );

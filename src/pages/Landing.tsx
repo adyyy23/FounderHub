@@ -118,7 +118,7 @@ export default function Landing() {
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1e1e1e] bg-[#080808]/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg p-0.5 -m-0.5 active:scale-[0.98] transition-transform">
             <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xs">F</span>
             </div>
@@ -126,21 +126,21 @@ export default function Landing() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors">Features</a>
-            <a href="#pricing" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors">Pricing</a>
-            <a href="#faq" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors">FAQ</a>
+            <a href="#features" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded">Features</a>
+            <a href="#pricing" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded">Pricing</a>
+            <a href="#faq" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded">FAQ</a>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="text-[#9ca3af] hover:text-white text-sm font-medium transition-colors"
+              className="text-[#9ca3af] hover:text-white text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
             >
               Sign In
             </Link>
             <Link
               to="/signup"
-              className="bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+              className="bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
             >
               Get Started
             </Link>
@@ -176,14 +176,14 @@ export default function Landing() {
           <div className="flex items-center justify-center gap-4">
             <Link
               to="/signup"
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-3.5 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-orange-500/20"
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-3.5 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-orange-500/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
             >
               Initialize Launch
               <ArrowRight size={16} />
             </Link>
             <Link
               to="/login"
-              className="text-[#9ca3af] hover:text-white font-medium text-sm transition-colors"
+              className="text-[#9ca3af] hover:text-white font-medium text-sm transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
             >
               View Demo Deck
             </Link>
@@ -213,7 +213,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Mission Health Card */}
-            <div className="bg-[#111111] border border-[#1e1e1e] rounded-2xl p-5 hover:border-[#2a2a2a] transition-colors">
+            <div className="bg-[#111111] border border-[#1e1e1e] rounded-2xl p-5 hover:border-[#2a2a2a] transition-colors cursor-default">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">Mission Health</span>
               </div>
@@ -245,7 +245,7 @@ export default function Landing() {
             </div>
 
             {/* Investor Command Card */}
-            <div className="bg-[#111111] border border-[#1e1e1e] rounded-2xl p-5 hover:border-[#2a2a2a] transition-colors">
+            <div className="bg-[#111111] border border-[#1e1e1e] rounded-2xl p-5 hover:border-[#2a2a2a] transition-colors cursor-default">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Investor Command</span>
               </div>
@@ -269,7 +269,7 @@ export default function Landing() {
             </div>
 
             {/* Strategic Timeline Card */}
-            <div className="bg-[#111111] border border-[#1e1e1e] rounded-2xl p-5 hover:border-[#2a2a2a] transition-colors">
+            <div className="bg-[#111111] border border-[#1e1e1e] rounded-2xl p-5 hover:border-[#2a2a2a] transition-colors cursor-default">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest">Strategic Timeline</span>
               </div>
@@ -386,7 +386,7 @@ export default function Landing() {
 
                 <Link
                   to="/signup"
-                  className={`block w-full text-center py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                  className={`block w-full text-center py-2.5 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98] ${
                     plan.featured
                       ? 'bg-orange-500 hover:bg-orange-400 text-white'
                       : 'bg-[#1e1e1e] hover:bg-[#252525] text-white border border-[#2a2a2a]'
@@ -428,7 +428,7 @@ export default function Landing() {
               <div key={i} className="bg-[#111111] border border-[#1e1e1e] rounded-xl overflow-hidden">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left"
+                  className="w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer hover:bg-[#161616] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
                 >
                   <span className="text-sm font-semibold text-white">{faq.q}</span>
                   {openFaq === i ? (
@@ -462,7 +462,7 @@ export default function Landing() {
               </p>
               <Link
                 to="/signup"
-                className="inline-block bg-white hover:bg-orange-50 text-orange-600 font-bold text-sm px-8 py-3.5 rounded-xl transition-colors shadow-lg"
+                className="inline-block bg-white hover:bg-orange-50 text-orange-600 font-bold text-sm px-8 py-3.5 rounded-xl transition-all duration-150 shadow-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
               >
                 Initialize Free Command
               </Link>
@@ -476,9 +476,9 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-[#4b5563] text-xs">2024 FounderHub Mission Control</span>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-[#4b5563] hover:text-[#6b7280] text-xs transition-colors">Privacy Policy</a>
-            <a href="#" className="text-[#4b5563] hover:text-[#6b7280] text-xs transition-colors">Terms of Service</a>
-            <a href="#" className="text-[#4b5563] hover:text-[#6b7280] text-xs transition-colors">Support</a>
+            <span className="text-[#4b5563] text-xs cursor-not-allowed opacity-60">Privacy Policy</span>
+            <span className="text-[#4b5563] text-xs cursor-not-allowed opacity-60">Terms of Service</span>
+            <span className="text-[#4b5563] text-xs cursor-not-allowed opacity-60">Support</span>
           </div>
         </div>
       </footer>

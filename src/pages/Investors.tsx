@@ -113,26 +113,26 @@ export default function Investors() {
           <div className="flex items-center bg-[#161616] border border-[#1e1e1e] rounded-lg p-1 gap-1">
             <button
               onClick={() => setView('board')}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${view === 'board' ? 'bg-[#1e1e1e] text-white' : 'text-[#6b7280] hover:text-white'}`}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${view === 'board' ? 'bg-[#1e1e1e] text-white' : 'text-[#6b7280] hover:text-white'}`}
             >
               <LayoutGrid size={13} />
               Board
             </button>
             <button
               onClick={() => setView('table')}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${view === 'table' ? 'bg-[#1e1e1e] text-white' : 'text-[#6b7280] hover:text-white'}`}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${view === 'table' ? 'bg-[#1e1e1e] text-white' : 'text-[#6b7280] hover:text-white'}`}
             >
               <List size={13} />
               Table
             </button>
           </div>
-          <button className="flex items-center gap-1.5 bg-[#161616] border border-[#1e1e1e] hover:border-[#2a2a2a] text-[#9ca3af] text-xs font-medium px-3 py-2 rounded-lg transition-colors">
+          <button className="flex items-center gap-1.5 bg-[#161616] border border-[#1e1e1e] hover:border-[#2a2a2a] text-[#9ca3af] text-xs font-medium px-3 py-2 rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
             <Filter size={13} />
             Filter
           </button>
           <Link
             to="/investors/new"
-            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
           >
             <Plus size={13} />
             Add Investor
@@ -163,7 +163,10 @@ export default function Investors() {
                   <div
                     key={inv.id}
                     onClick={() => navigate(`/investors/${inv.id}`)}
-                    className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-2xl overflow-hidden cursor-pointer transition-all duration-150 group"
+                    className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-2xl overflow-hidden cursor-pointer transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => e.key === 'Enter' && navigate(`/investors/${inv.id}`)}
                   >
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-3">

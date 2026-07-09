@@ -111,7 +111,7 @@ export default function Header() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search company, investor, metric..."
-            className="w-full bg-[#161616] border border-[#1e1e1e] rounded-lg pl-9 pr-4 py-2 text-sm text-[#9ca3af] placeholder-[#4b5563] focus:outline-none focus:border-[#2a2a2a] focus:text-white transition-colors"
+            className="w-full bg-[#161616] border border-[#1e1e1e] rounded-lg pl-9 pr-4 py-2 text-sm text-[#9ca3af] placeholder-[#4b5563] focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:text-white transition-colors"
           />
         </div>
       </form>
@@ -120,7 +120,7 @@ export default function Header() {
       <div className="flex items-center gap-3 ml-auto">
         <Link
           to="/ideas"
-          className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg px-4 py-2 text-sm text-white font-medium transition-colors"
+          className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] hover:border-[#2a2a2a] hover:bg-[#1a1a1a] rounded-lg px-4 py-2 text-sm text-white font-medium transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
         >
           <Plus size={14} />
           Quick Action
@@ -133,7 +133,7 @@ export default function Header() {
               setShowNotifications(!showNotifications);
               setShowUserMenu(false);
             }}
-            className="relative w-9 h-9 flex items-center justify-center bg-[#161616] border border-[#1e1e1e] rounded-lg text-[#9ca3af] hover:text-white transition-colors"
+            className="relative w-9 h-9 flex items-center justify-center bg-[#161616] border border-[#1e1e1e] rounded-lg text-[#9ca3af] hover:text-white hover:border-[#2a2a2a] transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.95]"
           >
             <Bell size={16} />
             {unreadCount > 0 && (
@@ -148,7 +148,7 @@ export default function Header() {
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded px-1"
                   >
                     <Check size={12} />
                     Mark all read
@@ -167,7 +167,7 @@ export default function Header() {
                       key={notification.id}
                       onClick={() => markAsRead(notification.id)}
                       className={cn(
-                        'w-full text-left px-4 py-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors',
+                        'w-full text-left px-4 py-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors cursor-pointer',
                         !notification.read_at && 'bg-[#1a1008]'
                       )}
                     >
@@ -210,7 +210,7 @@ export default function Header() {
               setShowUserMenu(!showUserMenu);
               setShowNotifications(false);
             }}
-            className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-[#2a2a2a] hover:border-orange-500 transition-colors"
+            className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-[#2a2a2a] hover:border-orange-500 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.95]"
           >
             {profile?.avatar_url ? (
               <img
@@ -239,7 +239,7 @@ export default function Header() {
                 <Link
                   to="/settings"
                   onClick={() => setShowUserMenu(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#9ca3af] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#9ca3af] hover:text-white hover:bg-[#1a1a1a] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
                 >
                   <Settings size={14} />
                   Settings
@@ -249,7 +249,7 @@ export default function Header() {
                     setShowUserMenu(false);
                     signOut();
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#9ca3af] hover:text-red-400 hover:bg-[#1a1a1a] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#9ca3af] hover:text-red-400 hover:bg-[#1a1a1a] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
                 >
                   <LogOut size={14} />
                   Sign Out

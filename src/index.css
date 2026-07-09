@@ -47,6 +47,31 @@
     min-height: 100vh;
     display: block;
   }
+
+  /* Global focus states */
+  *:focus {
+    outline: none;
+  }
+
+  *:focus-visible {
+    @apply ring-2 ring-orange-500 ring-offset-0 ring-offset-transparent;
+    outline: none;
+  }
+
+  /* Ensure buttons and links have pointer cursor */
+  button:not([disabled]):not(.cursor-not-allowed):not(.cursor-default),
+  a:not([disabled]):not(.cursor-not-allowed):not(.cursor-default),
+  [role="button"]:not([disabled]):not(.cursor-not-allowed):not(.cursor-default) {
+    cursor: pointer;
+  }
+
+  /* Disabled state */
+  button:disabled,
+  a:disabled,
+  [disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }
 
 /* Scrollbar styling */
