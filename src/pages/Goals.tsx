@@ -1,77 +1,54 @@
-import { Zap, BarChart2, Calendar, ArrowUpRight, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Zap, ChartBar as BarChart2, Calendar, ArrowUpRight, MoveHorizontal as MoreHorizontal, Plus, Loader as Loader2 } from 'lucide-react';
+import { goalService, type Goal, type KeyResult } from '@/services/goals';
 
 type Tab = 'all' | 'product' | 'growth' | 'ops';
 
-const goals = [
-  {
-    category: 'PRODUCT',
-    categoryColor: 'text-blue-400',
-    dotColor: 'bg-blue-400',
-    title: 'Achieve Series A Product-Market Fit Benchmarks',
-    completion: 68,
-    confidence: 'HIGH',
-    owner: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=40',
-    keyResults: [
-      { label: 'Improve Day 30 Retention to 45%', current: 38, target: 45, unit: '%' },
-      { label: 'Reduce Core Task Latency by 50%', current: 30, target: 50, unit: '%' },
-      { label: 'Launch 3 Mission-Critical AI Modules', current: 2, target: 3, unit: '' },
-    ],
-    tab: 'product',
-  },
-  {
-    category: 'GROWTH',
-    categoryColor: 'text-orange-400',
-    dotColor: 'bg-orange-400',
-    title: 'Scale Revenue to $2M ARR with Sustainable CAC',
-    completion: 42,
-    confidence: 'HIGH',
-    owner: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=40',
-    keyResults: [
-      { label: 'Close 12 New Enterprise Contracts', current: 5, target: 12, unit: '' },
-      { label: 'Maintain Blended CAC below $1,200', current: 1450, target: 1200, unit: '$', inverse: true },
-      { label: 'Expand to EMEA Market (Initial Presence)', current: 1, target: 1, unit: 'Market' },
-    ],
-    tab: 'growth',
-  },
-  {
-    category: 'OPERATIONS',
-    categoryColor: 'text-purple-400',
-    dotColor: 'bg-purple-400',
-    title: 'Build a World-Class Distributed Engineering Org',
-    completion: 85,
-    confidence: 'HIGH',
-    owner: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=40',
-    keyResults: [
-      { label: 'Hire 8 Senior Platform Engineers', current: 7, target: 8, unit: '' },
-      { label: 'Implement 24/7 On-Call Rotation Hubs', current: 100, target: 100, unit: '%' },
-      { label: 'Achieve 99.99% Infrastructure Uptime', current: 99.95, target: 99.99, unit: '%' },
-    ],
-    tab: 'ops',
-  },
-];
+const categoryColors: Record<string, { text: string; bg: string; dot: string }> = {
+  product: { text: 'text-blue-400', bg: 'bg-blue-400/10', dot: 'bg-blue-400' },
+  growth: { text: 'text-orange-400', bg: 'bg-orange-400/10', dot: 'bg-orange-400' },
+  operations: { text: 'text-purple-400', bg: 'bg-purple-400/10', dot: 'bg-purple-400' },
+  default: { text: 'text-gray-400', bg: 'bg-gray-400/10', dot: 'bg-gray-400' },
+};
 
-const milestones = [
-  { date: 'OCT 12', label: 'V2.0-Core-Beta-Launch', done: true },
-  { date: 'OCT 28', label: 'Investor Update: Q3 Metrics', done: false },
-  { date: 'NOV 15', label: 'Hiring Sprint: Eng Lead', done: false },
-  { date: 'DEC 05', label: 'Annual Strategy Offsite', done: false },
-];
+interface KeyResultDisplay {
+  id: string;
+  label: string;
+  current: number;
+  target: number;
+  unit: string;
+  inverse?: boolean;
+}
 
-function GoalCard({ goal }: { goal: typeof goals[0] }) {
-  const fillPct = Math.min(100, (goal.completion / 100) * 100);
+function GoalCard({ goal, onEdit }: { goal: Goal; onEdit: (goal: Goal) => void }) {
+  const fillPct = Math.min(100, goal.completion);
+  const category = goal.category?.toLowerCase() || 'default';
+  const colors = categoryColors[category] || categoryColors.default;
+
+  const keyResults: KeyResultDisplay[] = goal.key_results?.map((kr: KeyResult) => ({
+    id: kr.id,
+    label: kr.label,
+    current: kr.current,
+    target: kr.target,
+    unit: kr.unit || '',
+    inverse: kr.label.toLowerCase().includes('reduc') || kr.label.toLowerCase().includes('lower'),
+  })) || [];
 
   return (
     <div className="bg-[#141414] border border-[#1e1e1e] rounded-2xl p-5 mb-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-bold ${goal.categoryColor} uppercase tracking-widest`}>{goal.category}</span>
+          <span className={`text-[10px] font-bold ${colors.text} uppercase tracking-widest`}>
+            {goal.category || 'GOAL'}
+          </span>
         </div>
         <div className="flex items-center gap-3">
-          <img src={goal.owner} alt="owner" className="w-7 h-7 rounded-full object-cover border border-[#2a2a2a]" />
           <div className="text-right">
             <div className="text-2xl font-bold text-white">{goal.completion}%</div>
-            <div className="text-[9px] text-[#6b7280] uppercase">CONFIDENCE: {goal.confidence}</div>
+            <div className="text-[9px] text-[#6b7280] uppercase">
+              {goal.due_date ? `Due: ${new Date(goal.due_date).toLocaleDateString()}` : 'No deadline'}
+            </div>
           </div>
         </div>
       </div>
@@ -91,38 +68,46 @@ function GoalCard({ goal }: { goal: typeof goals[0] }) {
         </div>
       </div>
 
-      <div className="border-t border-[#1e1e1e] pt-3">
-        <div className="text-[10px] font-bold text-[#6b7280] uppercase tracking-widest mb-2">Key Results</div>
-        <div className="space-y-2">
-          {goal.keyResults.map((kr, i) => {
-            const rawPct = kr.inverse
-              ? kr.current > kr.target ? 0 : ((kr.target - kr.current) / kr.target) * 100
-              : (kr.current / kr.target) * 100;
-            const pct = Math.min(100, rawPct);
-            const displayCurrent = kr.unit === '%' ? `${kr.current}%` : kr.unit === '$' ? `${kr.current}$` : `${kr.current}`;
-            const displayTarget = kr.unit === '%' ? `${kr.target}%` : kr.unit === '$' ? `${kr.target}$` : `${kr.target}${kr.unit ? ' / ' + kr.unit : ''}`;
-            return (
-              <div key={i}>
-                <div className="flex items-center justify-between text-xs text-[#9ca3af] mb-1">
-                  <span>{kr.label}</span>
-                  <span className="text-[#6b7280] flex-shrink-0 ml-4">{displayCurrent} / {displayTarget}</span>
+      {keyResults.length > 0 && (
+        <div className="border-t border-[#1e1e1e] pt-3">
+          <div className="text-[10px] font-bold text-[#6b7280] uppercase tracking-widest mb-2">Key Results</div>
+          <div className="space-y-2">
+            {keyResults.map((kr) => {
+              const rawPct = kr.inverse
+                ? kr.current > kr.target ? 0 : ((kr.target - kr.current) / kr.target) * 100
+                : (kr.current / kr.target) * 100;
+              const pct = Math.min(100, rawPct);
+              const displayCurrent = kr.unit === '%' ? `${kr.current}%` : `${kr.current}`;
+              const displayTarget = kr.unit === '%' ? `${kr.target}%` : `${kr.target}`;
+
+              return (
+                <div key={kr.id}>
+                  <div className="flex items-center justify-between text-xs text-[#9ca3af] mb-1">
+                    <span>{kr.label}</span>
+                    <span className="text-[#6b7280] flex-shrink-0 ml-4">
+                      {displayCurrent} / {displayTarget}
+                    </span>
+                  </div>
+                  <div className="w-full h-0.5 bg-[#2a2a2a] rounded-full">
+                    <div
+                      className={`h-full rounded-full ${pct >= 100 ? 'bg-green-500' : pct >= 60 ? 'bg-orange-500' : 'bg-red-500'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-0.5 bg-[#2a2a2a] rounded-full">
-                  <div
-                    className={`h-full rounded-full ${pct >= 100 ? 'bg-green-500' : pct >= 60 ? 'bg-orange-500' : 'bg-red-500'}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#1e1e1e]">
-        <button className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-white transition-colors">
+        <button
+          onClick={() => onEdit(goal)}
+          className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-white transition-colors"
+        >
           <MoreHorizontal size={13} />
-          More Details
+          Edit Goal
         </button>
         <button className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors">
           <Zap size={11} />
@@ -135,8 +120,60 @@ function GoalCard({ goal }: { goal: typeof goals[0] }) {
 
 export default function Goals() {
   const [activeTab, setActiveTab] = useState<Tab>('all');
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = activeTab === 'all' ? goals : goals.filter((g) => g.tab === activeTab);
+  useEffect(() => {
+    loadGoals();
+  }, []);
+
+  const loadGoals = async () => {
+    try {
+      const data = await goalService.getAll();
+      setGoals(data);
+    } catch (err) {
+      console.error('Failed to load goals:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (goal: Goal) => {
+    console.log('Edit goal:', goal.id);
+  };
+
+  const tabToCategory: Record<Tab, string | null> = {
+    all: null,
+    product: 'product',
+    growth: 'growth',
+    ops: 'operations',
+  };
+
+  const filtered = activeTab === 'all'
+    ? goals.filter((g) => g.status !== 'archived')
+    : goals.filter((g) => g.category?.toLowerCase() === tabToCategory[activeTab] && g.status !== 'archived');
+
+  const avgCompletion = goals.length > 0
+    ? Math.round(goals.reduce((sum, g) => sum + g.completion, 0) / goals.length)
+    : 0;
+
+  const milestones = goals
+    .filter((g) => g.due_date)
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
+    .slice(0, 4)
+    .map((g) => ({
+      date: new Date(g.due_date!).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase(),
+      label: g.title.slice(0, 25) + (g.title.length > 25 ? '...' : ''),
+      done: g.completion >= 100,
+    }));
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader2 size={24} className="text-orange-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 min-h-screen">
@@ -157,9 +194,13 @@ export default function Goals() {
             <BarChart2 size={14} />
             Quarterly Report
           </button>
-          <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+          <Link
+            to="/goals/new"
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <Plus size={14} />
             New Objective
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -172,9 +213,11 @@ export default function Goals() {
                 Quarterly Focus: Q4 2024
               </span>
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">System Velocity: 72%</h2>
+            <h2 className="text-3xl font-bold text-white mb-2">System Velocity: {avgCompletion}%</h2>
             <p className="text-[#9ca3af] text-sm leading-relaxed max-w-lg">
-              You are currently ahead of schedule for Product milestones but trailing on Growth targets. Focus on the European expansion to re-align velocity.
+              {goals.length === 0
+                ? 'Add your first goal to start tracking progress towards your strategic objectives.'
+                : `You have ${goals.filter(g => g.status !== 'archived').length} active objectives. Keep pushing towards your targets.`}
             </p>
             <div className="flex items-center gap-3 mt-4">
               <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
@@ -194,11 +237,11 @@ export default function Goals() {
                 cx="60" cy="60" r="48"
                 fill="none" stroke="#f97316" strokeWidth="10"
                 strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 48 * 0.72} ${2 * Math.PI * 48}`}
+                strokeDasharray={`${2 * Math.PI * 48 * (avgCompletion / 100)} ${2 * Math.PI * 48}`}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-white">72%</span>
+              <span className="text-2xl font-bold text-white">{avgCompletion}%</span>
               <span className="text-[9px] text-[#6b7280] uppercase tracking-wider">Progress</span>
             </div>
           </div>
@@ -226,23 +269,44 @@ export default function Goals() {
             ))}
             <span className="ml-auto text-[11px] text-[#4b5563]">
               <Calendar size={11} className="inline mr-1" />
-              Last updated 4 hours ago by Sarah
+              {goals.length} total objectives
             </span>
           </div>
 
-          {filtered.map((goal, i) => (
-            <GoalCard key={i} goal={goal} />
-          ))}
+          {filtered.length > 0 ? (
+            filtered.map((goal) => (
+              <GoalCard key={goal.id} goal={goal} onEdit={handleEdit} />
+            ))
+          ) : (
+            <div className="bg-[#141414] border border-[#1e1e1e] rounded-2xl p-8 text-center">
+              <div className="text-4xl mb-3">target</div>
+              <p className="text-sm font-medium text-[#6b7280] mb-1">No objectives found</p>
+              <p className="text-xs text-[#4b5563] mb-4">
+                {activeTab === 'all'
+                  ? 'Add your first objective to start tracking progress.'
+                  : `No ${activeTab} objectives yet.`}
+              </p>
+              <Link
+                to="/goals/new"
+                className="inline-flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300"
+              >
+                <Plus size={14} />
+                Add Objective
+              </Link>
+            </div>
+          )}
 
           {/* End state */}
-          <div className="flex flex-col items-center py-10 text-center">
-            <div className="text-4xl mb-3">🏆</div>
-            <p className="text-sm font-medium text-[#6b7280] mb-1">You've reached the end of critical objectives</p>
-            <p className="text-xs text-[#4b5563] mb-4">Archive completed goals to keep your roadmap clean.</p>
-            <button className="text-sm text-[#9ca3af] hover:text-white border border-[#2a2a2a] hover:border-[#3a3a3a] px-4 py-2 rounded-lg transition-colors">
-              View Goal Archive
-            </button>
-          </div>
+          {filtered.length > 0 && (
+            <div className="flex flex-col items-center py-10 text-center">
+              <div className="text-4xl mb-3">trophy</div>
+              <p className="text-sm font-medium text-[#6b7280] mb-1">You've reached the end of critical objectives</p>
+              <p className="text-xs text-[#4b5563] mb-4">Archive completed goals to keep your roadmap clean.</p>
+              <button className="text-sm text-[#9ca3af] hover:text-white border border-[#2a2a2a] hover:border-[#3a3a3a] px-4 py-2 rounded-lg transition-colors">
+                View Goal Archive
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right sidebar */}
@@ -258,17 +322,15 @@ export default function Goals() {
             <div className="space-y-2">
               <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
                 <div className="text-[9px] text-orange-400 uppercase mb-1">The Mission</div>
-                <div className="text-sm font-semibold text-white">Become the infrastructure of AI-first companies.</div>
+                <div className="text-sm font-semibold text-white">Build the future of founder tools.</div>
               </div>
               <div className="ml-4 space-y-2">
-                <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-2.5">
-                  <div className="text-[9px] text-[#6b7280] uppercase mb-0.5">Strategic Goal</div>
-                  <div className="text-xs font-medium text-white">Scale Series A ARR</div>
-                </div>
-                <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-2.5">
-                  <div className="text-[9px] text-[#6b7280] uppercase mb-0.5">Strategic Goal</div>
-                  <div className="text-xs font-medium text-white">Engineering Excellence</div>
-                </div>
+                {goals.slice(0, 2).map((g) => (
+                  <div key={g.id} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-2.5">
+                    <div className="text-[9px] text-[#6b7280] uppercase mb-0.5">{g.category || 'Goal'}</div>
+                    <div className="text-xs font-medium text-white truncate">{g.title}</div>
+                  </div>
+                ))}
               </div>
             </div>
             <button className="mt-3 flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors">
@@ -283,19 +345,23 @@ export default function Goals() {
               <Calendar size={12} className="text-[#6b7280]" />
               <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-widest">Critical Milestones</span>
             </div>
-            <div className="space-y-3">
-              {milestones.map((m, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${m.done ? 'bg-green-500' : 'border-2 border-[#2a2a2a]'}`}>
-                    {m.done && <span className="text-white text-[9px] font-bold">✓</span>}
+            {milestones.length > 0 ? (
+              <div className="space-y-3">
+                {milestones.map((m, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${m.done ? 'bg-green-500' : 'border-2 border-[#2a2a2a]'}`}>
+                      {m.done && <span className="text-white text-[9px] font-bold">done</span>}
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[#6b7280] mb-0.5">{m.date}</div>
+                      <div className="text-xs font-medium text-white">{m.label}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] text-[#6b7280] mb-0.5">{m.date}</div>
-                    <div className="text-xs font-medium text-white">{m.label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-[#6b7280]">No upcoming milestones. Add target dates to your goals.</p>
+            )}
           </div>
 
           {/* AI Strategist */}
@@ -305,17 +371,19 @@ export default function Goals() {
               <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">AI Strategist</span>
             </div>
             <p className="text-xs text-[#9ca3af] leading-relaxed mb-3">
-              "Growth objectives are 12% behind baseline. I recommend shifting 15% of engineering capacity from Platform stability to User Onboarding automation."
+              {goals.length === 0
+                ? "Add goals to receive AI-powered strategic recommendations tailored to your objectives."
+                : `You're making progress on ${goals.length} objectives. Focus on completing key results to maintain momentum.`}
             </p>
             <button className="w-full bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold py-2.5 rounded-lg transition-colors">
-              Apply Strategy Shift
+              Get AI Insights
             </button>
           </div>
         </div>
       </div>
 
       <footer className="mt-10 pt-4 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
-        <span>© 2024 FounderHub Mission Control</span>
+        <span>2024 FounderHub Mission Control</span>
         <a href="#" className="hover:text-[#6b7280]">Privacy Policy</a>
         <a href="#" className="hover:text-[#6b7280]">Terms of Service</a>
         <a href="#" className="hover:text-[#6b7280]">Support</a>

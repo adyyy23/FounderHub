@@ -1,12 +1,6 @@
 import { useState } from 'react';
-import {
-  Zap, Brain, Users, Target, BarChart2, Shield,
-  ArrowRight, CheckCircle, ChevronDown, ChevronUp,
-} from 'lucide-react';
-
-interface LandingProps {
-  onEnterApp: () => void;
-}
+import { Link } from 'react-router-dom';
+import { Zap, Brain, Users, Target, ChartBar as BarChart2, Shield, ArrowRight, CircleCheck as CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 const features = [
   {
@@ -53,7 +47,7 @@ const pricing = [
     price: '$0',
     period: '/month',
     featured: false,
-    cta: 'Start Deployment',
+    cta: 'Start Free',
     features: [
       'Single Mission Control',
       'Up to 10 Investor Tracks',
@@ -116,9 +110,7 @@ const faqs = [
   },
 ];
 
-const navLinks = ['Mission', 'Intelligence', 'Portfolio', 'Pricing'];
-
-export default function Landing({ onEnterApp }: LandingProps) {
+export default function Landing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
@@ -126,34 +118,32 @@ export default function Landing({ onEnterApp }: LandingProps) {
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1e1e1e] bg-[#080808]/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xs">F</span>
             </div>
             <span className="text-white font-semibold text-[15px] tracking-tight">FounderHub</span>
-          </div>
+          </Link>
 
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <button key={link} className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors">
-                {link}
-              </button>
-            ))}
+            <a href="#features" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors">Features</a>
+            <a href="#pricing" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors">Pricing</a>
+            <a href="#faq" className="text-[#6b7280] hover:text-white text-sm font-medium transition-colors">FAQ</a>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={onEnterApp}
+            <Link
+              to="/login"
               className="text-[#9ca3af] hover:text-white text-sm font-medium transition-colors"
             >
               Sign In
-            </button>
-            <button
-              onClick={onEnterApp}
+            </Link>
+            <Link
+              to="/signup"
               className="bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
             >
               Get Started
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -184,16 +174,19 @@ export default function Landing({ onEnterApp }: LandingProps) {
           </p>
 
           <div className="flex items-center justify-center gap-4">
-            <button
-              onClick={onEnterApp}
+            <Link
+              to="/signup"
               className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-3.5 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-orange-500/20"
             >
               Initialize Launch
               <ArrowRight size={16} />
-            </button>
-            <button className="text-[#9ca3af] hover:text-white font-medium text-sm transition-colors">
+            </Link>
+            <Link
+              to="/login"
+              className="text-[#9ca3af] hover:text-white font-medium text-sm transition-colors"
+            >
               View Demo Deck
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -304,7 +297,7 @@ export default function Landing({ onEnterApp }: LandingProps) {
       </section>
 
       {/* Features - Built for the Relentless */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-y border-[#1e1e1e]">
+      <section id="features" className="py-24 px-6 bg-[#0d0d0d] border-y border-[#1e1e1e]">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4">Built for the Relentless.</h2>
@@ -349,7 +342,7 @@ export default function Landing({ onEnterApp }: LandingProps) {
       </section>
 
       {/* Pricing */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-y border-[#1e1e1e]">
+      <section id="pricing" className="py-24 px-6 bg-[#0d0d0d] border-y border-[#1e1e1e]">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-3">Select Your Command Tier.</h2>
@@ -391,16 +384,16 @@ export default function Landing({ onEnterApp }: LandingProps) {
                   ))}
                 </ul>
 
-                <button
-                  onClick={onEnterApp}
-                  className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                <Link
+                  to="/signup"
+                  className={`block w-full text-center py-2.5 rounded-xl text-sm font-bold transition-colors ${
                     plan.featured
                       ? 'bg-orange-500 hover:bg-orange-400 text-white'
                       : 'bg-[#1e1e1e] hover:bg-[#252525] text-white border border-[#2a2a2a]'
                   }`}
                 >
                   {plan.cta}
-                </button>
+                </Link>
               </div>
             ))}
           </div>
@@ -412,7 +405,7 @@ export default function Landing({ onEnterApp }: LandingProps) {
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex justify-center gap-1 mb-8">
             {[...Array(3)].map((_, i) => (
-              <span key={i} className="text-[#2a2a2a] text-2xl">✦</span>
+              <span key={i} className="text-[#2a2a2a] text-2xl">&#10022;</span>
             ))}
           </div>
           <blockquote className="text-2xl md:text-3xl font-bold text-white leading-snug mb-8">
@@ -427,7 +420,7 @@ export default function Landing({ onEnterApp }: LandingProps) {
       </section>
 
       {/* FAQ */}
-      <section className="py-20 px-6 bg-[#0d0d0d] border-t border-[#1e1e1e]">
+      <section id="faq" className="py-20 px-6 bg-[#0d0d0d] border-t border-[#1e1e1e]">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-black text-white text-center mb-12">Common Questions.</h2>
           <div className="space-y-2">
@@ -467,12 +460,12 @@ export default function Landing({ onEnterApp }: LandingProps) {
               <p className="text-orange-100 text-sm mb-8 max-w-sm mx-auto">
                 Join 15,000+ founders who are redefining startup operations. Your mission control awaits.
               </p>
-              <button
-                onClick={onEnterApp}
-                className="bg-white hover:bg-orange-50 text-orange-600 font-bold text-sm px-8 py-3.5 rounded-xl transition-colors shadow-lg"
+              <Link
+                to="/signup"
+                className="inline-block bg-white hover:bg-orange-50 text-orange-600 font-bold text-sm px-8 py-3.5 rounded-xl transition-colors shadow-lg"
               >
                 Initialize Free Command
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -481,19 +474,11 @@ export default function Landing({ onEnterApp }: LandingProps) {
       {/* Footer */}
       <footer className="border-t border-[#1e1e1e] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="text-[#4b5563] text-xs">© 2024 FounderHub Mission Control</span>
+          <span className="text-[#4b5563] text-xs">2024 FounderHub Mission Control</span>
           <div className="flex items-center gap-6">
             <a href="#" className="text-[#4b5563] hover:text-[#6b7280] text-xs transition-colors">Privacy Policy</a>
             <a href="#" className="text-[#4b5563] hover:text-[#6b7280] text-xs transition-colors">Terms of Service</a>
             <a href="#" className="text-[#4b5563] hover:text-[#6b7280] text-xs transition-colors">Support</a>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="bg-[#111111] border border-[#2a2a2a] text-[#6b7280] text-[10px] font-medium px-3 py-1 rounded-full">
-              Mission
-            </button>
-            <button className="bg-[#111111] border border-[#2a2a2a] text-[#6b7280] text-[10px] font-medium px-3 py-1 rounded-full">
-              Variant B
-            </button>
           </div>
         </div>
       </footer>

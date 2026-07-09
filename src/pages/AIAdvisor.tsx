@@ -1,7 +1,14 @@
 import { TrendingUp, TrendingDown, Shield, Mail, Map, Target, Lightbulb, Plus, Zap, Send } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-const advisorMessages = [
+const advisorMessages: Array<{
+  id: number;
+  title: string;
+  subtitle: string;
+  body: string[];
+  actions: Array<{ label: string; icon: typeof Mail; to: string }>;
+}> = [
   {
     id: 1,
     title: 'Advisor Insight',
@@ -11,9 +18,9 @@ const advisorMessages = [
       "However, Sequoia specifically highlighted 'User Acquisition Velocity' as a key risk. Delaying this hire might slow your ARR trajectory. I recommend a contract-to-hire model for the next 90 days to maintain momentum without the full burn commitment.",
     ],
     actions: [
-      { label: 'Draft Email to Sequoia', icon: Mail },
-      { label: 'Add Milestone to Roadmap', icon: Map },
-      { label: "Create 'Growth Hire' Goal", icon: Target },
+      { label: 'Draft Email to Sequoia', icon: Mail, to: '/investors' },
+      { label: 'Add Milestone to Roadmap', icon: Map, to: '/roadmap' },
+      { label: "Create 'Growth Hire' Goal", icon: Target, to: '/goals' },
     ],
   },
   {
@@ -24,7 +31,7 @@ const advisorMessages = [
       "I've also detected a potential synergy in your 'Idea Vault'. There's a 'Viral Loop Experiment' that could be executed by your existing team to bridge the gap until the hire is finalized.",
     ],
     actions: [
-      { label: 'View Idea Vault', icon: Lightbulb },
+      { label: 'View Idea Vault', icon: Lightbulb, to: '/ideas' },
     ],
   },
 ];
@@ -133,13 +140,14 @@ export default function AIAdvisor() {
 
               <div className="flex flex-wrap gap-2">
                 {msg.actions.map((action) => (
-                  <button
+                  <Link
                     key={action.label}
+                    to={action.to}
                     className="flex items-center gap-2 bg-[#1e1e1e] hover:bg-[#252525] border border-[#2a2a2a] text-[#9ca3af] hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <action.icon size={12} />
                     {action.label}
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -151,6 +159,7 @@ export default function AIAdvisor() {
           {suggestions.map((s) => (
             <button
               key={s}
+              onClick={() => setInputValue(s)}
               className="flex-shrink-0 flex items-center gap-1.5 bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] text-[#9ca3af] hover:text-white text-xs px-3 py-1.5 rounded-full transition-colors"
             >
               <Zap size={10} className="text-orange-400" />
@@ -192,9 +201,9 @@ export default function AIAdvisor() {
         {/* Footer */}
         <footer className="px-6 py-3 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
           <span>© 2024 FounderHub Mission Control</span>
-          <a href="#" className="hover:text-[#6b7280]">Privacy Policy</a>
-          <a href="#" className="hover:text-[#6b7280]">Terms of Service</a>
-          <a href="#" className="hover:text-[#6b7280]">Support</a>
+          <span className="cursor-not-allowed opacity-60">Privacy Policy</span>
+          <span className="cursor-not-allowed opacity-60">Terms of Service</span>
+          <span className="cursor-not-allowed opacity-60">Support</span>
         </footer>
       </div>
     </div>
