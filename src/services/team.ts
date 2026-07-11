@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-export type MemberStatus = 'active' | 'inactive';
+export type MemberStatus = 'active' | 'inactive' | 'on_leave';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';
 
@@ -36,6 +36,7 @@ export interface TeamMemberInsert {
   email?: string;
   avatar_url?: string;
   workload?: number;
+  status?: MemberStatus;
 }
 
 export interface TaskInsert {
@@ -62,6 +63,18 @@ export const teamService = {
     const { data, error } = await supabase
       .from('team_members')
       .insert(member)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: Partial<TeamMemberInsert>): Promise<TeamMember> {
+    const { data, error } = await supabase
+      .from('team_members')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
       .select()
       .single();
 

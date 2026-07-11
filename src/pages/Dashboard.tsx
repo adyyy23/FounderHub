@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, ArrowRight, Zap, Users, Activity, Loader as Loader2 } from 'lucide-react';
+import { TrendingUp, ArrowRight, Zap, Users, Activity, Loader as Loader2, Plus, Sparkles } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { investorService, type Investor } from '@/services/investors';
 import { activityService, type ActivityLog } from '@/services/activity';
 import { goalService, type Goal } from '@/services/goals';
 import { useAuth } from '@/contexts/AuthContext';
+import AIInsightsModal from '@/components/AIInsightsModal';
+import { generateDashboardInsights, type AIAnalysisResult } from '@/lib/aiInsights';
 
 interface GrowthData {
   month: string;
@@ -34,6 +36,7 @@ export default function Dashboard() {
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [showInsights, setShowInsights] = useState(false);
   const [stats, setStats] = useState({
     totalCommitment: 0,
     investorCount: 0,
@@ -76,6 +79,11 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  const generateInsights = useCallback(async (): Promise<AIAnalysisResult> => {
+    await new Promise((r) => setTimeout(r, 1200));
+    return generateDashboardInsights(goals, investors, activities, stats);
+  }, [goals, investors, activities, stats]);
 
   const formatTimeAgo = (date: string) => {
     const diff = Date.now() - new Date(date).getTime();
@@ -201,13 +209,22 @@ export default function Dashboard() {
               ? `Focus on "${topGoal.title}" - currently at ${topGoal.completion}% completion.`
               : 'Add your first goal to start tracking progress and receive AI-powered insights.'}
           </p>
-          <Link
-            to="/goals"
-            className="flex items-center gap-2 bg-[#1e1e1e] hover:bg-[#252525] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
-          >
-            {topGoal ? 'View All Goals' : 'Add Goal'}
-            <ArrowRight size={14} />
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowInsights(true)}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
+            >
+              <Sparkles size={14} />
+              Run Insights
+            </button>
+            <Link
+              to="/goals"
+              className="flex items-center gap-2 bg-[#1e1e1e] hover:bg-[#252525] text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 active:scale-[0.98]"
+            >
+              {topGoal ? 'View All Goals' : 'Add Goal'}
+              <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
 
         {/* Top Investor */}
@@ -250,9 +267,10 @@ export default function Dashboard() {
             <div className="text-center py-4">
               <p className="text-[#6b7280] text-sm mb-3">No investors in pipeline yet</p>
               <Link
-                to="/investors"
-                className="text-orange-400 text-xs font-medium hover:text-orange-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+                to="/investors/new"
+                className="inline-flex items-center gap-1.5 text-orange-400 text-xs font-medium hover:text-orange-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
               >
+                <Plus size={12} />
                 Add your first investor
               </Link>
             </div>
@@ -414,6 +432,14 @@ export default function Dashboard() {
         <span className="cursor-not-allowed opacity-60">Terms of Service</span>
         <span className="cursor-not-allowed opacity-60">Support</span>
       </footer>
+
+      <AIInsightsModal
+        open={showInsights}
+        onClose={() => setShowInsights(false)}
+        onGenerate={generateInsights}
+        title="AI Founder Insights"
+        subtitle="Strategic analysis from your dashboard telemetry"
+      />
     </div>
   );
 }

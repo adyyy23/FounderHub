@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Search, ChevronDown, Plus, Filter, Calendar, Loader as Loader2 } from 'lucide-react';
-import { roadmapService, type RoadmapItem } from '@/services/roadmap';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, ChevronDown, Plus, Calendar, Loader as Loader2, CreditCard as Edit2, Trash2, Check, Sparkles } from 'lucide-react';
+import { roadmapService, type RoadmapItem, type RoadmapStatus, type RoadmapPriority } from '@/services/roadmap';
+import { useToast } from '@/hooks/use-toast';
+import AIInsightsModal from '@/components/AIInsightsModal';
+import { generateRoadmapInsights, type AIAnalysisResult } from '@/lib/aiInsights';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 type RoadmapView = 'gantt' | 'milestone';
 
@@ -12,6 +18,7 @@ const priorityColors: Record<string, string> = {
   high: 'text-orange-400 bg-orange-400/10',
   medium: 'text-yellow-400 bg-yellow-400/10',
   low: 'text-green-400 bg-green-400/10',
+  critical: 'text-red-400 bg-red-400/10',
 };
 
 const statusColors: Record<string, { bg: string; border: string }> = {
@@ -21,13 +28,196 @@ const statusColors: Record<string, { bg: string; border: string }> = {
   'on-hold': { bg: '#1f1a0f', border: 'border-yellow-800/40' },
 };
 
+const statusLabels: Record<string, string> = {
+  backlog: 'Backlog',
+  planned: 'Planned',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+interface RoadmapFormData {
+  title: string;
+  description: string;
+  status: RoadmapStatus;
+  priority: RoadmapPriority;
+  start_date: string;
+  end_date: string;
+  progress: number;
+  assignee: string;
+}
+
+function RoadmapFormDialog({
+  open,
+  onClose,
+  onSubmit,
+  initialItem,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: RoadmapFormData) => Promise<void>;
+  initialItem?: RoadmapItem | null;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<RoadmapFormData>({
+    title: '',
+    description: '',
+    status: 'backlog',
+    priority: 'medium',
+    start_date: '',
+    end_date: '',
+    progress: 0,
+    assignee: '',
+  });
+
+  useEffect(() => {
+    if (initialItem) {
+      setFormData({
+        title: initialItem.title,
+        description: initialItem.description || '',
+        status: initialItem.status,
+        priority: initialItem.priority,
+        start_date: initialItem.start_date || '',
+        end_date: initialItem.end_date || '',
+        progress: initialItem.progress,
+        assignee: initialItem.assignee || '',
+      });
+    } else {
+      setFormData({ title: '', description: '', status: 'backlog', priority: 'medium', start_date: '', end_date: '', progress: 0, assignee: '' });
+    }
+  }, [initialItem, open]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim()) return;
+    setLoading(true);
+    await onSubmit(formData);
+    setLoading(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-[#0d0d0d] border-[#2a2a2a] max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-white">{initialItem ? 'Edit Initiative' : 'New Initiative'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Title *</label>
+            <Input
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Multi-Currency SSO"
+              className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder-[#4b5563]"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe this initiative..."
+              rows={3}
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white placeholder-[#4b5563] text-sm focus:outline-none focus:border-[#3a3a3a]"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as RoadmapStatus })}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+              >
+                <option value="backlog">Backlog</option>
+                <option value="planned">Planned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Priority</label>
+              <select
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as RoadmapPriority })}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Start Date</label>
+              <Input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">End Date</label>
+              <Input
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Progress (%)</label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={formData.progress}
+                onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })}
+                className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Assignee</label>
+              <Input
+                value={formData.assignee}
+                onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
+                placeholder="John Doe"
+                className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder-[#4b5563]"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" onClick={onClose} variant="outline" className="border-[#2a2a2a] text-[#9ca3af] hover:text-white">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading} className="bg-orange-500 hover:bg-orange-400 text-white">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : initialItem ? 'Save Changes' : 'Create Initiative'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Roadmap() {
+  const { toast } = useToast();
   const [view, setView] = useState<RoadmapView>('gantt');
   const [backlogOpen, setBacklogOpen] = useState(true);
   const [cycleOpen, setCycleOpen] = useState(true);
   const [items, setItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<RoadmapItem | null>(null);
+  const [showInsights, setShowInsights] = useState(false);
 
   useEffect(() => {
     loadItems();
@@ -43,6 +233,97 @@ export default function Roadmap() {
       setLoading(false);
     }
   };
+
+  const handleCreate = async (data: RoadmapFormData) => {
+    try {
+      await roadmapService.create({
+        title: data.title,
+        description: data.description || undefined,
+        status: data.status,
+        priority: data.priority,
+        start_date: data.start_date || undefined,
+        end_date: data.end_date || undefined,
+        progress: data.progress,
+        assignee: data.assignee || undefined,
+      });
+      toast({ title: 'Initiative created successfully' });
+      setShowForm(false);
+      loadItems();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to create initiative', variant: 'destructive' });
+    }
+  };
+
+  const handleEdit = async (data: RoadmapFormData) => {
+    if (!editingItem) return;
+    try {
+      await roadmapService.update(editingItem.id, {
+        title: data.title,
+        description: data.description || undefined,
+        status: data.status,
+        priority: data.priority,
+        start_date: data.start_date || undefined,
+        end_date: data.end_date || undefined,
+        progress: data.progress,
+        assignee: data.assignee || undefined,
+      });
+      toast({ title: 'Initiative updated successfully' });
+      setShowForm(false);
+      setEditingItem(null);
+      loadItems();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to update initiative', variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await roadmapService.delete(id);
+      toast({ title: 'Initiative deleted' });
+      loadItems();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to delete initiative', variant: 'destructive' });
+    }
+  };
+
+  const handleComplete = async (item: RoadmapItem) => {
+    try {
+      await roadmapService.update(item.id, { status: 'completed', progress: 100 });
+      toast({ title: 'Initiative marked complete!' });
+      loadItems();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to complete initiative', variant: 'destructive' });
+    }
+  };
+
+  const handleProgressUpdate = async (item: RoadmapItem, progress: number) => {
+    try {
+      await roadmapService.update(item.id, { progress });
+      loadItems();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to update progress', variant: 'destructive' });
+    }
+  };
+
+  const openEdit = (item: RoadmapItem) => {
+    setEditingItem(item);
+    setShowForm(true);
+  };
+
+  const openCreate = () => {
+    setEditingItem(null);
+    setShowForm(true);
+  };
+
+  const generateInsights = useCallback(async (): Promise<AIAnalysisResult> => {
+    await new Promise((r) => setTimeout(r, 1200));
+    return generateRoadmapInsights(items);
+  }, [items]);
 
   const backlogItems = items.filter((i) => i.status === 'backlog' || !i.start_date);
   const activeItems = items.filter((i) => i.status === 'in_progress' && i.start_date);
@@ -72,6 +353,7 @@ export default function Roadmap() {
       color: statuses.bg,
       border: statuses.border,
       row: idx % 2,
+      itemId: item.id,
     };
   });
 
@@ -133,22 +415,30 @@ export default function Roadmap() {
                 const priorityStyle = priorityColors[priority] || priorityColors.medium;
 
                 return (
-                  <div key={item.id} className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg p-2.5 cursor-pointer transition-colors">
+                  <div key={item.id} className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg p-2.5 cursor-pointer transition-colors group">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className={`text-[10px] font-semibold ${priorityStyle} px-1.5 py-0.5 rounded`}>{priority}</span>
-                      <button className="text-[#4b5563] hover:text-[#6b7280] transition-colors">
-                        <Plus size={11} />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(item)} className="text-[#4b5563] hover:text-white transition-colors">
+                          <Edit2 size={10} />
+                        </button>
+                        <button onClick={() => handleDelete(item.id)} className="text-[#4b5563] hover:text-red-400 transition-colors">
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
                     </div>
                     <div className="text-xs font-medium text-white mb-1">{item.title}</div>
-                    <div className="text-[10px] text-[#4b5563] uppercase">{item.status?.replace('_', ' ') || 'backlog'}</div>
+                    <div className="text-[10px] text-[#4b5563] uppercase">{statusLabels[item.status] || item.status}</div>
                   </div>
                 );
               })}
               {backlogItems.length === 0 && (
                 <p className="text-xs text-[#6b7280] py-2">No backlog items</p>
               )}
-              <button className="flex items-center gap-1.5 text-xs text-[#4b5563] hover:text-[#6b7280] pl-1 transition-colors">
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-1.5 text-xs text-[#4b5563] hover:text-[#6b7280] pl-1 transition-colors"
+              >
                 <Plus size={11} />
                 Add Item
               </button>
@@ -194,10 +484,14 @@ export default function Roadmap() {
                 const priorityStyle = priorityColors[priority] || priorityColors.medium;
 
                 return (
-                  <div key={item.id} className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg p-2.5 cursor-pointer transition-colors">
+                  <div key={item.id} className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-lg p-2.5 cursor-pointer transition-colors group">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className={`text-[10px] font-semibold ${priorityStyle} px-1.5 py-0.5 rounded`}>{priority}</span>
-                      <span className="text-[10px] text-orange-400">{item.progress}%</span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(item)} className="text-[#4b5563] hover:text-white transition-colors">
+                          <Edit2 size={10} />
+                        </button>
+                      </div>
                     </div>
                     <div className="text-xs font-medium text-white mb-1">{item.title}</div>
                     <div className="text-[10px] text-[#4b5563] uppercase">in progress</div>
@@ -241,11 +535,17 @@ export default function Roadmap() {
                 Milestone View
               </button>
             </div>
-            <button className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] hover:border-[#2a2a2a] text-[#9ca3af] text-xs font-medium px-3 py-2 rounded-lg transition-colors">
-              <Filter size={12} />
-              Filter
+            <button
+              onClick={() => setShowInsights(true)}
+              className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] hover:border-orange-500/50 text-[#9ca3af] hover:text-orange-400 text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+            >
+              <Sparkles size={12} />
+              AI Insights
             </button>
-            <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+            >
               <Plus size={13} />
               New Initiative
             </button>
@@ -307,7 +607,7 @@ export default function Roadmap() {
                 {ganttItems.filter((item) => item.row === 0).map((item) => (
                   <div
                     key={item.id}
-                    className={`absolute top-2 border ${item.border} rounded-xl p-3 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+                    className={`absolute top-2 border ${item.border} rounded-xl p-3 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity group`}
                     style={{
                       left: `${item.startCol * COL_W}px`,
                       width: `${item.spanCols * COL_W - 8}px`,
@@ -319,9 +619,17 @@ export default function Roadmap() {
                         <div className="text-sm font-bold text-white truncate">{item.title}</div>
                         {item.subtitle && <div className="text-[11px] text-[#6b7280] truncate">{item.subtitle}</div>}
                       </div>
-                      <span className={`text-[10px] font-semibold ${item.tagColor} px-2 py-0.5 rounded-full ml-2 flex-shrink-0`}>
-                        {item.tag}
-                      </span>
+                      <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                        <span className={`text-[10px] font-semibold ${item.tagColor} px-2 py-0.5 rounded-full`}>
+                          {item.tag}
+                        </span>
+                        <button
+                          onClick={() => openEdit(items.find(i => i.id === item.itemId)!)}
+                          className="opacity-0 group-hover:opacity-100 text-[#4b5563] hover:text-white transition-opacity p-0.5"
+                        >
+                          <Edit2 size={11} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -332,7 +640,7 @@ export default function Roadmap() {
                 {ganttItems.filter((item) => item.row === 1).map((item) => (
                   <div
                     key={item.id}
-                    className={`absolute top-2 border ${item.border} rounded-xl p-3 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+                    className={`absolute top-2 border ${item.border} rounded-xl p-3 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity group`}
                     style={{
                       left: `${item.startCol * COL_W}px`,
                       width: `${item.spanCols * COL_W - 8}px`,
@@ -344,9 +652,17 @@ export default function Roadmap() {
                         <div className="text-sm font-bold text-white truncate">{item.title}</div>
                         {item.subtitle && <div className="text-[11px] text-[#6b7280] truncate">{item.subtitle}</div>}
                       </div>
-                      <span className={`text-[10px] font-semibold ${item.tagColor} px-2 py-0.5 rounded-full ml-2 flex-shrink-0`}>
-                        {item.tag}
-                      </span>
+                      <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                        <span className={`text-[10px] font-semibold ${item.tagColor} px-2 py-0.5 rounded-full`}>
+                          {item.tag}
+                        </span>
+                        <button
+                          onClick={() => openEdit(items.find(i => i.id === item.itemId)!)}
+                          className="opacity-0 group-hover:opacity-100 text-[#4b5563] hover:text-white transition-opacity p-0.5"
+                        >
+                          <Edit2 size={11} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -360,10 +676,75 @@ export default function Roadmap() {
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">No Roadmap Items Yet</h3>
                 <p className="text-[#6b7280] text-sm mb-4">Add initiatives to visualize your strategic timeline.</p>
-                <button className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                <button
+                  onClick={openCreate}
+                  className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
                   <Plus size={14} />
                   Add First Initiative
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* All items list with edit/delete/complete */}
+          {items.length > 0 && (
+            <div className="px-8 py-6 border-t border-[#1e1e1e]">
+              <h3 className="text-sm font-bold text-white mb-4">All Initiatives</h3>
+              <div className="space-y-2">
+                {items.map((item) => {
+                  const priority = (item.priority || 'medium').toLowerCase();
+                  const priorityStyle = priorityColors[priority] || priorityColors.medium;
+                  return (
+                    <div key={item.id} className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-xl p-3 flex items-center gap-3 group transition-colors">
+                      <span className={`text-[10px] font-semibold ${priorityStyle} px-2 py-0.5 rounded flex-shrink-0`}>{priority}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white truncate">{item.title}</div>
+                        <div className="text-[10px] text-[#6b7280]">
+                          {statusLabels[item.status] || item.status}
+                          {item.assignee && ` • ${item.assignee}`}
+                          {item.end_date && ` • Due ${new Date(item.end_date).toLocaleDateString()}`}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={item.progress}
+                          onChange={(e) => handleProgressUpdate(item, parseInt(e.target.value))}
+                          className="w-20 h-1 accent-orange-500 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-white font-semibold w-8 text-right">{item.progress}%</span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {item.status !== 'completed' && (
+                            <button
+                              onClick={() => handleComplete(item)}
+                              className="text-[#4b5563] hover:text-green-400 transition-colors p-1"
+                              title="Mark Complete"
+                            >
+                              <Check size={12} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => openEdit(item)}
+                            className="text-[#4b5563] hover:text-white transition-colors p-1"
+                            title="Edit"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="text-[#4b5563] hover:text-red-400 transition-colors p-1"
+                            title="Delete"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -379,9 +760,27 @@ export default function Roadmap() {
       </div>
 
       {/* FAB */}
-      <button className="fixed bottom-8 right-8 w-12 h-12 bg-orange-500 hover:bg-orange-400 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/20 transition-colors z-50">
-        <span className="text-lg font-bold">+</span>
+      <button
+        onClick={openCreate}
+        className="fixed bottom-8 right-8 w-12 h-12 bg-orange-500 hover:bg-orange-400 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/20 transition-colors z-50"
+      >
+        <Plus size={20} />
       </button>
+
+      <RoadmapFormDialog
+        open={showForm}
+        onClose={() => { setShowForm(false); setEditingItem(null); }}
+        onSubmit={editingItem ? handleEdit : handleCreate}
+        initialItem={editingItem}
+      />
+
+      <AIInsightsModal
+        open={showInsights}
+        onClose={() => setShowInsights(false)}
+        onGenerate={generateInsights}
+        title="AI Roadmap Insights"
+        subtitle="Strategic analysis of your roadmap initiatives"
+      />
     </div>
   );
 }

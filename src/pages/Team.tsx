@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Search, Filter, Plus, MessageSquare, Calendar, ArrowUpRight, Zap, Loader as Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Filter, Plus, MessageSquare, Calendar, Zap, Loader as Loader2, CreditCard as Edit2, Trash2, Sparkles, X } from 'lucide-react';
 import { teamService, taskService, type TeamMember, type Task } from '@/services/team';
+import { useToast } from '@/hooks/use-toast';
+import AIInsightsModal from '@/components/AIInsightsModal';
+import { generateTeamInsights, type AIAnalysisResult } from '@/lib/aiInsights';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const hours = ['8h', '10h', '12h', '14h', '16h', '18h', '20h'];
@@ -36,6 +42,7 @@ const deptColors: Record<string, string> = {
   default: 'text-gray-400 bg-gray-400/10',
 };
 
+
 function LoadCircle({ pct, overloaded }: { pct: number; overloaded: boolean }) {
   const r = 18;
   const circ = 2 * Math.PI * r;
@@ -63,11 +70,214 @@ const statusDot: Record<string, string> = {
   offline: 'bg-gray-400',
 };
 
+interface TeamMemberFormData {
+  name: string;
+  role: string;
+  department: string;
+  email: string;
+  avatar_url: string;
+  workload: number;
+  status: 'active' | 'inactive' | 'on_leave';
+  skills: string[];
+}
+
+function TeamMemberFormDialog({
+  open,
+  onClose,
+  onSubmit,
+  initialMember,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: TeamMemberFormData) => Promise<void>;
+  initialMember?: TeamMember | null;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [skillInput, setSkillInput] = useState('');
+  const [formData, setFormData] = useState<TeamMemberFormData>({
+    name: '',
+    role: '',
+    department: '',
+    email: '',
+    avatar_url: '',
+    workload: 50,
+    status: 'active',
+    skills: [],
+  });
+
+  useEffect(() => {
+    if (initialMember) {
+      setFormData({
+        name: initialMember.name,
+        role: initialMember.role || '',
+        department: initialMember.department || '',
+        email: initialMember.email || '',
+        avatar_url: initialMember.avatar_url || '',
+        workload: initialMember.workload || 50,
+        status: initialMember.status || 'active',
+        skills: ((initialMember as unknown) as Record<string, unknown>).skills as string[] || [],
+      });
+    } else {
+      setFormData({ name: '', role: '', department: '', email: '', avatar_url: '', workload: 50, status: 'active', skills: [] });
+    }
+  }, [initialMember, open]);
+
+  const addSkill = () => {
+    if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
+      setFormData({ ...formData, skills: [...formData.skills, skillInput.trim()] });
+      setSkillInput('');
+    }
+  };
+
+  const removeSkill = (skill: string) => {
+    setFormData({ ...formData, skills: formData.skills.filter((s) => s !== skill) });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return;
+    setLoading(true);
+    await onSubmit(formData);
+    setLoading(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-[#0d0d0d] border-[#2a2a2a] max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-white">{initialMember ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Name *</label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="John Doe"
+              className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder-[#4b5563]"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Role</label>
+              <Input
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                placeholder="Senior Engineer"
+                className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder-[#4b5563]"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Department</label>
+              <select
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+              >
+                <option value="">Select department</option>
+                <option value="engineering">Engineering</option>
+                <option value="product">Product</option>
+                <option value="design">Design</option>
+                <option value="marketing">Marketing</option>
+                <option value="growth">Growth</option>
+                <option value="operations">Operations</option>
+                <option value="infra">Infra</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Email</label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="john@founderhub.com"
+              className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder-[#4b5563]"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Avatar URL</label>
+            <Input
+              value={formData.avatar_url}
+              onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
+              placeholder="https://..."
+              className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder-[#4b5563]"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Workload (%)</label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={formData.workload}
+                onChange={(e) => setFormData({ ...formData, workload: parseInt(e.target.value) || 0 })}
+                className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'on_leave' })}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="on_leave">On Leave</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-[#6b7280] mb-1.5 block">Skills</label>
+            <div className="flex gap-2 mb-2">
+              <Input
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
+                placeholder="Type a skill and press Enter"
+                className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder-[#4b5563]"
+              />
+              <Button type="button" onClick={addSkill} className="bg-[#1e1e1e] hover:bg-[#252525] text-white border border-[#2a2a2a]">
+                <Plus size={14} />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {formData.skills.map((skill) => (
+                <span key={skill} className="flex items-center gap-1 text-xs text-[#9ca3af] bg-[#1e1e1e] border border-[#2a2a2a] px-2 py-1 rounded-full">
+                  {skill}
+                  <button type="button" onClick={() => removeSkill(skill)} className="text-[#4b5563] hover:text-red-400 transition-colors">
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" onClick={onClose} variant="outline" className="border-[#2a2a2a] text-[#9ca3af] hover:text-white">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading} className="bg-orange-500 hover:bg-orange-400 text-white">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : initialMember ? 'Save Changes' : 'Add Member'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Team() {
+  const { toast } = useToast();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [showInsights, setShowInsights] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -87,6 +297,83 @@ export default function Team() {
       setLoading(false);
     }
   };
+
+  const handleCreate = async (data: TeamMemberFormData) => {
+    try {
+      await teamService.create({
+        name: data.name,
+        role: data.role || undefined,
+        department: data.department || undefined,
+        email: data.email || undefined,
+        avatar_url: data.avatar_url || undefined,
+        workload: data.workload,
+      });
+      toast({ title: 'Team member added successfully' });
+      setShowForm(false);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to add team member', variant: 'destructive' });
+    }
+  };
+
+  const handleEdit = async (data: TeamMemberFormData) => {
+    if (!editingMember) return;
+    try {
+      await teamService.update(editingMember.id, {
+        name: data.name,
+        role: data.role || undefined,
+        department: data.department || undefined,
+        email: data.email || undefined,
+        avatar_url: data.avatar_url || undefined,
+        workload: data.workload,
+      });
+      toast({ title: 'Team member updated successfully' });
+      setShowForm(false);
+      setEditingMember(null);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to update team member', variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await teamService.delete(id);
+      toast({ title: 'Team member removed' });
+      loadData();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to remove team member', variant: 'destructive' });
+    }
+  };
+
+  const handleStatusChange = async (member: TeamMember, status: 'active' | 'inactive' | 'on_leave') => {
+    try {
+      await teamService.update(member.id, { status });
+      toast({ title: `Status updated to ${status.replace('_', ' ')}` });
+      loadData();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to update status', variant: 'destructive' });
+    }
+  };
+
+  const openEdit = (member: TeamMember) => {
+    setEditingMember(member);
+    setShowForm(true);
+  };
+
+  const openCreate = () => {
+    setEditingMember(null);
+    setShowForm(true);
+  };
+
+  const generateInsights = useCallback(async (): Promise<AIAnalysisResult> => {
+    await new Promise((r) => setTimeout(r, 1200));
+    return generateTeamInsights(members, tasks);
+  }, [members, tasks]);
 
   const filteredMembers = searchQuery
     ? members.filter((m) =>
@@ -142,15 +429,21 @@ export default function Team() {
               </p>
             </div>
             <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center bg-[#161616] border border-[#1e1e1e] rounded-lg p-1">
-                <button className="bg-[#1e1e1e] text-white text-xs font-semibold px-3 py-1.5 rounded-md">Variant A</button>
-                <button className="text-[#6b7280] text-xs font-semibold px-3 py-1.5 rounded-md hover:text-white transition-colors">Variant B</button>
-              </div>
+              <button
+                onClick={() => setShowInsights(true)}
+                className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] hover:border-orange-500/50 text-[#9ca3af] hover:text-orange-400 text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+              >
+                <Sparkles size={12} />
+                AI Insights
+              </button>
               <button className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] text-[#9ca3af] text-xs font-medium px-3 py-2 rounded-lg">
                 <Filter size={12} />
                 Filter
               </button>
-              <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
                 <Plus size={13} />
                 Invite Talent
               </button>
@@ -177,9 +470,10 @@ export default function Team() {
                 const deptStyle = deptColors[dept] || deptColors.default;
                 const isOverloaded = (m.workload || 0) >= 90;
                 const status = isOverloaded ? 'overloaded' : (m.workload || 0) >= 80 ? 'busy' : 'online';
+                const memberSkills = ((m as unknown) as Record<string, unknown>).skills as string[] || [];
 
                 return (
-                  <div key={m.id} className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-2xl p-4 transition-colors">
+                  <div key={m.id} className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-2xl p-4 transition-colors group">
                     <div className="flex items-start gap-3">
                       {/* Avatar + status */}
                       <div className="relative flex-shrink-0">
@@ -205,21 +499,54 @@ export default function Team() {
                         <span className={`inline-block text-[10px] font-semibold ${deptStyle} px-2 py-0.5 rounded-full mt-2`}>
                           {m.department || 'General'}
                         </span>
+                        {memberSkills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {memberSkills.slice(0, 3).map((skill) => (
+                              <span key={skill} className="text-[9px] text-[#9ca3af] bg-[#1e1e1e] px-1.5 py-0.5 rounded">
+                                {skill}
+                              </span>
+                            ))}
+                            {memberSkills.length > 3 && (
+                              <span className="text-[9px] text-[#4b5563]">+{memberSkills.length - 3}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#1a1a1a]">
+                      <select
+                        value={m.status || 'active'}
+                        onChange={(e) => handleStatusChange(m, e.target.value as 'active' | 'inactive' | 'on_leave')}
+                        className="text-[10px] bg-[#1e1e1e] border border-[#2a2a2a] rounded px-1.5 py-1 text-[#9ca3af] focus:outline-none focus:border-orange-500"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="on_leave">On Leave</option>
+                      </select>
                       <button className="text-[#4b5563] hover:text-[#6b7280] transition-colors">
                         <MessageSquare size={13} />
                       </button>
                       <button className="text-[#4b5563] hover:text-[#6b7280] transition-colors">
                         <Calendar size={13} />
                       </button>
-                      <button className="ml-auto flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 transition-colors font-medium">
-                        View Tasks
-                        <ArrowUpRight size={11} />
-                      </button>
+                      <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEdit(m)}
+                          className="text-[#4b5563] hover:text-white transition-colors p-1"
+                          title="Edit"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(m.id)}
+                          className="text-[#4b5563] hover:text-red-400 transition-colors p-1"
+                          title="Remove"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -234,7 +561,10 @@ export default function Team() {
               <p className="text-[#6b7280] text-sm mb-6">
                 Add team members to track workload, assign tasks, and manage capacity.
               </p>
-              <button className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors">
+              <button
+                onClick={openCreate}
+                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
+              >
                 <Plus size={16} />
                 Add First Team Member
               </button>
@@ -292,8 +622,11 @@ export default function Team() {
                 <p className="text-[11px] text-[#9ca3af] leading-relaxed mb-2">
                   <span className="text-orange-400 font-semibold">{overloadedMember.name}</span> has exceeded 90% capacity. Consider redistributing tasks.
                 </p>
-                <button className="w-full bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-semibold py-1.5 rounded-lg transition-colors">
-                  Apply Reassignment
+                <button
+                  onClick={() => setShowInsights(true)}
+                  className="w-full bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-semibold py-1.5 rounded-lg transition-colors"
+                >
+                  View Full Analysis
                 </button>
               </>
             ) : (
@@ -358,6 +691,21 @@ export default function Team() {
           )}
         </div>
       </div>
+
+      <TeamMemberFormDialog
+        open={showForm}
+        onClose={() => { setShowForm(false); setEditingMember(null); }}
+        onSubmit={editingMember ? handleEdit : handleCreate}
+        initialMember={editingMember}
+      />
+
+      <AIInsightsModal
+        open={showInsights}
+        onClose={() => setShowInsights(false)}
+        onGenerate={generateInsights}
+        title="AI Team Insights"
+        subtitle="Analysis of team capacity and workload"
+      />
     </div>
   );
 }

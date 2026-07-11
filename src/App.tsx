@@ -12,6 +12,7 @@ const Signup = lazy(() => import('@/pages/Signup'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const AIAdvisor = lazy(() => import('@/pages/AIAdvisor'));
 const Investors = lazy(() => import('@/pages/Investors'));
+const AddInvestor = lazy(() => import('@/pages/AddInvestor'));
 const InvestorProfile = lazy(() => import('@/pages/InvestorProfile'));
 const IdeaVault = lazy(() => import('@/pages/IdeaVault'));
 const Goals = lazy(() => import('@/pages/Goals'));
@@ -78,6 +79,7 @@ function AppRoutes() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/advisor" element={<AIAdvisor />} />
             <Route path="/investors" element={<Investors />} />
+            <Route path="/investors/new" element={<AddInvestor />} />
             <Route path="/investors/:id" element={<InvestorProfile />} />
             <Route path="/ideas" element={<IdeaVault />} />
             <Route path="/goals" element={<Goals />} />
