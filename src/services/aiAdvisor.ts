@@ -22,7 +22,84 @@ export interface Conversation {
 }
 
 export const aiAdvisorService = {
+  // NOTE: Gemini integration is optional and auto-detected.
+  // If the VITE_GEMINI_API_KEY env var is present, requests are sent to the
+  // Gemini API. Otherwise the local heuristic engine is used as a fallback.
   async generateResponse(userMessage: string): Promise<string> {
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (geminiApiKey) {
+      try {
+        return await this.generateGeminiResponse(userMessage, geminiApiKey);
+      } catch (err) {
+        console.error('Gemini request failed, falling back to local engine:', err);
+      }
+    }
+    return this.generateLocalResponse(userMessage);
+  },
+
+  async generateGeminiResponse(userMessage: string, apiKey: string): Promise<string> {
+    const [investors, goals, ideas, roadmap, members] = await Promise.all([
+      investorService.getAll(),
+      goalService.getAll(),
+      ideaService.getAll(),
+      roadmapService.getAll(),
+      teamService.getAll(),
+    ]);
+
+    const activeGoals = goals.filter((g) => g.status === 'active');
+    const completedGoals = goals.filter((g) => g.status === 'completed');
+    const totalCommitment = investors.reduce((s, i) => s + (i.commitment || 0), 0);
+    const monthlyBurn = 128000;
+    const runway = totalCommitment > 0 ? (totalCommitment / monthlyBurn).toFixed(1) : '0';
+    const avgCompletion = activeGoals.length > 0
+      ? Math.round(activeGoals.reduce((s, g) => s + g.completion, 0) / activeGoals.length)
+      : 0;
+
+    const context = [
+      `You are an AI strategic advisor for startup founders, integrated into FounderHub.`,
+      `Current workspace data:`,
+      `- Investors: ${investors.length} total (${investors.filter((i) => i.stage === 'NEGOTIATING').length} negotiating, ${investors.filter((i) => i.stage === 'INTERESTED').length} interested)`,
+      `- Total commitments: ${(totalCommitment / 1000).toFixed(0)}k`,
+      `- Estimated monthly burn: ${(monthlyBurn / 1000).toFixed(0)}k`,
+      `- Runway: ${runway} months`,
+      `- Goals: ${activeGoals.length} active, ${completedGoals.length} completed, average completion ${avgCompletion}%`,
+      `- Ideas: ${ideas.length} total`,
+      `- Roadmap items: ${roadmap.length} total (${roadmap.filter((r) => r.status === 'in_progress').length} in progress)`,
+      `- Team members: ${members.length}`,
+      `Answer the founder's question concisely and with actionable, data-driven advice.`,
+    ].join('\n');
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: context },
+                { text: userMessage },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(`Gemini API error: ${res.status} ${res.statusText}`);
+    }
+
+    const json = await res.json();
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      throw new Error('Gemini returned an empty response');
+    }
+    return text.trim();
+  },
+
+  async generateLocalResponse(userMessage: string): Promise<string> {
     const [investors, goals, ideas, roadmap, members] = await Promise.all([
       investorService.getAll(),
       goalService.getAll(),
@@ -44,7 +121,7 @@ export const aiAdvisorService = {
       const totalCommitment = investors.reduce((s, i) => s + (i.commitment || 0), 0);
       const monthlyBurn = 128000;
       const runway = totalCommitment > 0 ? (totalCommitment / monthlyBurn).toFixed(1) : '0';
-      return `Based on your current data:\n\n• Total commitments: $${(totalCommitment / 1000).toFixed(0)}k\n• Estimated monthly burn: $${(monthlyBurn / 1000).toFixed(0)}k\n• Runway: ${runway} months\n\n${parseFloat(runway) < 12 ? 'Your runway is below 12 months. I recommend accelerating fundraising conversations with your ' + negotiatingInvestors.length + ' active pipeline investors and reducing non-essential spend.' : 'Your runway looks healthy. Focus on growth initiatives and capital efficiency to extend it further.'}`;
+      return `Based on your current data:\n\n• Total commitments: ${(totalCommitment / 1000).toFixed(0)}k\n• Estimated monthly burn: ${(monthlyBurn / 1000).toFixed(0)}k\n• Runway: ${runway} months\n\n${parseFloat(runway) < 12 ? 'Your runway is below 12 months. I recommend accelerating fundraising conversations with your ' + negotiatingInvestors.length + ' active pipeline investors and reducing non-essential spend.' : 'Your runway looks healthy. Focus on growth initiatives and capital efficiency to extend it further.'}`;
     }
 
     if (msg.includes('investor') || msg.includes('fundrais') || msg.includes('capital') || msg.includes('raise')) {

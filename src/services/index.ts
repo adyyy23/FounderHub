@@ -8,3 +8,4 @@ export { notificationService, type Notification } from './notifications';
 export { roadmapService, type RoadmapItem, type RoadmapItemInsert, type RoadmapStatus, type RoadmapPriority } from './roadmap';
 export { startupService, type Startup, type StartupInsert, type StartupUpdate } from './startups';
 export { activityService, type ActivityLog } from './activity';
+export { notificationPreferencesService, type NotificationPreferences, type NotificationPreferencesUpdate } from './notificationPreferences';

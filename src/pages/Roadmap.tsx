@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, ChevronDown, Plus, Calendar, Loader as Loader2, CreditCard as Edit2, Trash2, Check, Sparkles, Filter, X } from 'lucide-react';
 import { roadmapService, type RoadmapItem, type RoadmapStatus, type RoadmapPriority } from '@/services/roadmap';
 import { useToast } from '@/hooks/use-toast';
@@ -848,9 +849,9 @@ export default function Roadmap() {
         {/* Footer */}
         <footer className="px-8 py-3 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
           <span>2024 FounderHub Mission Control</span>
-          <a href="#" className="hover:text-[#6b7280]">Privacy Policy</a>
-          <a href="#" className="hover:text-[#6b7280]">Terms of Service</a>
-          <a href="#" className="hover:text-[#6b7280]">Support</a>
+          <Link to="/privacy" className="hover:text-[#9ca3af] transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-[#9ca3af] transition-colors">Terms of Service</Link>
+          <Link to="/support" className="hover:text-[#9ca3af] transition-colors">Support</Link>
         </footer>
       </div>
 

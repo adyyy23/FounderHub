@@ -1,114 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Brain, Users, Target, ChartBar as BarChart2, Shield, ArrowRight, CircleCheck as CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
-
-const features = [
-  {
-    icon: Brain,
-    title: 'Intelligence Layer',
-    desc: 'AI-driven strategic analysis that spots burn-rate anomalies before they become crises.',
-  },
-  {
-    icon: Users,
-    title: 'Investor CRM',
-    desc: 'Full-funnel tracking from cold intro to wired funds. Integrated cap-table simulations.',
-  },
-  {
-    icon: BarChart2,
-    title: 'Telemetry Rails',
-    desc: 'Real-time data ingestion from Stripe, AWS, and QuickBooks. One source of truth.',
-  },
-  {
-    icon: Target,
-    title: 'Goal Architect',
-    desc: 'Cascading OKRs that link every line of code to a high-level strategic objective.',
-  },
-  {
-    icon: Shield,
-    title: 'Command Vault',
-    desc: 'Bank-grade encryption for your most sensitive investor comms and financial data.',
-  },
-  {
-    icon: Zap,
-    title: 'Unified Stack',
-    desc: 'Consolidate 12+ fragmented tools into a single, high-performance mission control.',
-  },
-];
-
-const steps = [
-  { num: '01', title: 'Connect Your Stack', desc: 'Link Stripe, QuickBooks, and your CRM in minutes. Live telemetry activates automatically.' },
-  { num: '02', title: 'Define Your Mission', desc: 'Set OKRs, fundraising targets, and hiring milestones. AI aligns every team action to your strategy.' },
-  { num: '03', title: 'Launch with Precision', desc: 'Your advisor surfaces risks before they surface in board meetings. Act early, lead always.' },
-];
-
-const pricing = [
-  {
-    name: 'Seed Pilot',
-    price: '$0',
-    period: '/month',
-    featured: false,
-    cta: 'Start Free',
-    features: [
-      'Single Mission Control',
-      'Up to 10 Investor Tracks',
-      'Basic Metrics (Stripe only)',
-      'Standard Roadmap',
-      'Email Support',
-    ],
-  },
-  {
-    name: 'Series A+ Commander',
-    price: '$499',
-    period: '/month',
-    featured: true,
-    cta: 'Secure Access',
-    features: [
-      'Unlimited Command Deck',
-      'Infinite Investor CRM',
-      'Advanced Telemetry AI',
-      'Custom Strategy Playbooks',
-      '24/7 Priority Support',
-      'API Access',
-    ],
-  },
-  {
-    name: 'Enterprise Fleet',
-    price: '$1,249',
-    period: '/month',
-    featured: false,
-    cta: 'Start Deployment',
-    features: [
-      'Multi-Entity Aggregation',
-      'White-label Investor Portal',
-      'Full Cap-Table Management',
-      'Dedicated Success Advisor',
-      'On-premise Options',
-    ],
-  },
-];
-
-const faqs = [
-  {
-    q: 'How quickly can I get started?',
-    a: 'Most founders complete onboarding in under 20 minutes. Connect your first data source, set your OKRs, and your Mission Control goes live immediately.',
-  },
-  {
-    q: 'Does FounderHub replace my existing tools?',
-    a: 'Yes — FounderHub is designed to consolidate Notion, Airtable, HubSpot, and spreadsheets into a single command layer. Integrations are bi-directional.',
-  },
-  {
-    q: 'Is my financial data secure?',
-    a: 'Absolutely. We use bank-grade AES-256 encryption, SOC 2 Type II certification, and never sell or share your data with third parties.',
-  },
-  {
-    q: 'Can I invite my co-founder and advisors?',
-    a: 'Yes. Every plan includes team seats with granular role-based permissions. Advisors get read-only views; operators get full write access.',
-  },
-  {
-    q: 'What makes the AI Advisor different?',
-    a: 'Our AI is trained on 10,000+ startup trajectories. It doesn\'t just surface metrics — it cross-references them against investor sentiment and market conditions to produce actionable strategic guidance.',
-  },
-];
+import Logo from '@/components/Logo';
+import { ArrowRight, CircleCheck as CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  features,
+  steps,
+  pricing,
+  faqs,
+  stats,
+  testimonials,
+} from '@/config/landing';
 
 export default function Landing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -119,9 +20,7 @@ export default function Landing() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1e1e1e] bg-[#080808]/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg p-0.5 -m-0.5 active:scale-[0.98] transition-transform">
-            <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">F</span>
-            </div>
+            <Logo size={28} />
             <span className="text-white font-semibold text-[15px] tracking-tight">FounderHub</span>
           </Link>
 
@@ -194,12 +93,7 @@ export default function Landing() {
       {/* Stats */}
       <section className="py-12 border-y border-[#1e1e1e] bg-[#0d0d0d]">
         <div className="max-w-4xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[
-            { value: '$2.4B+', label: 'Capital Raised' },
-            { value: '15k', label: 'Active Founders' },
-            { value: '94%', label: 'Series A Velocity' },
-            { value: '120+', label: 'Top-Tier VCs' },
-          ].map((stat) => (
+          {stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
               <div className="text-[11px] font-medium text-[#6b7280] uppercase tracking-widest">{stat.label}</div>
@@ -409,12 +303,11 @@ export default function Landing() {
             ))}
           </div>
           <blockquote className="text-2xl md:text-3xl font-bold text-white leading-snug mb-8">
-            "FounderHub didn't just organize my business; it changed how I think as a CEO.
-            I went from reactive chaos to strategic command in 6 weeks."
+            "{testimonials[0].quote}"
           </blockquote>
           <div>
-            <div className="text-sm font-bold text-white uppercase tracking-wider mb-0.5">Sarah Jenkins</div>
-            <div className="text-xs text-[#6b7280] uppercase tracking-wider">Founder of NexaHealth (Raised $55M)</div>
+            <div className="text-sm font-bold text-white uppercase tracking-wider mb-0.5">{testimonials[0].author}</div>
+            <div className="text-xs text-[#6b7280] uppercase tracking-wider">{testimonials[0].role}</div>
           </div>
         </div>
       </section>
@@ -476,9 +369,9 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-[#4b5563] text-xs">2024 FounderHub Mission Control</span>
           <div className="flex items-center gap-6">
-            <span className="text-[#4b5563] text-xs cursor-not-allowed opacity-60">Privacy Policy</span>
-            <span className="text-[#4b5563] text-xs cursor-not-allowed opacity-60">Terms of Service</span>
-            <span className="text-[#4b5563] text-xs cursor-not-allowed opacity-60">Support</span>
+            <Link to="/privacy" className="text-[#4b5563] text-xs hover:text-[#9ca3af] transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="text-[#4b5563] text-xs hover:text-[#9ca3af] transition-colors">Terms of Service</Link>
+            <Link to="/support" className="text-[#4b5563] text-xs hover:text-[#9ca3af] transition-colors">Support</Link>
           </div>
         </div>
       </footer>

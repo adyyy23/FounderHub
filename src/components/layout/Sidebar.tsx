@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import Logo from '@/components/Logo';
 import { useEffect, useState } from 'react';
 import { LayoutDashboard, MessageSquare, Users, Target, ChartBar as BarChart2, Lightbulb, Map, Users as Users2, TrendingUp, Settings, LogOut, Loader as Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -72,9 +73,7 @@ export default function Sidebar() {
         to="/dashboard"
         className="flex items-center gap-2.5 px-5 h-[60px] border-b border-[#1e1e1e] hover:bg-[#1a1a1a] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-inset active:scale-[0.98]"
       >
-        <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-sm">F</span>
-        </div>
+        <Logo size={32} showText={false} />
         <span className="text-white font-semibold text-[15px] tracking-tight">FounderHub</span>
       </Link>
 

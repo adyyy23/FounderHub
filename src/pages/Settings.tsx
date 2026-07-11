@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Mail, Building, Briefcase, Globe, Linkedin, Twitter, Camera, Loader as Loader2, Check } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { User, Mail, Building, Briefcase, Globe, Linkedin, Twitter, Camera, Loader as Loader2, Check, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService } from '@/services/profiles';
+import { notificationPreferencesService, type NotificationPreferencesUpdate } from '@/services/notificationPreferences';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -20,6 +23,15 @@ export default function Settings() {
     linkedin_url: '',
     twitter_url: '',
   });
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferencesUpdate>({
+    email_notifications: true,
+    product_updates: true,
+    investor_alerts: true,
+    team_notifications: true,
+  });
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  const { toast } = useToast();
 
   useEffect(() => {
     if (profile) {
@@ -34,6 +46,42 @@ export default function Settings() {
       });
     }
   }, [profile]);
+
+  useEffect(() => {
+    loadNotifPrefs();
+  }, []);
+
+  const loadNotifPrefs = async () => {
+    try {
+      const prefs = await notificationPreferencesService.get();
+      if (prefs) {
+        setNotifPrefs({
+          email_notifications: prefs.email_notifications,
+          product_updates: prefs.product_updates,
+          investor_alerts: prefs.investor_alerts,
+          team_notifications: prefs.team_notifications,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load notification preferences:', err);
+    }
+  };
+
+  const handleNotifToggle = async (key: keyof NotificationPreferencesUpdate, value: boolean) => {
+    const updated = { ...notifPrefs, [key]: value };
+    setNotifPrefs(updated);
+    setNotifLoading(true);
+    try {
+      await notificationPreferencesService.upsert(updated);
+      toast({ title: 'Notification preferences updated' });
+    } catch (err) {
+      console.error('Failed to save notification preferences:', err);
+      toast({ title: 'Failed to update preferences', variant: 'destructive' });
+      setNotifPrefs(notifPrefs);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,6 +293,35 @@ export default function Settings() {
           </div>
         </form>
 
+        {/* Notification Preferences */}
+        <div className="mt-8 bg-[#141414] border border-[#1e1e1e] rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Bell size={18} className="text-orange-400" />
+            <h2 className="text-lg font-bold text-white">Notification Preferences</h2>
+          </div>
+          <p className="text-xs text-[#6b7280] mb-6">Choose what updates you want to receive. Changes are saved automatically.</p>
+          <div className="space-y-5">
+            {([
+              { key: 'email_notifications', label: 'Email Notifications', desc: 'General account and security emails' },
+              { key: 'product_updates', label: 'Product Updates', desc: 'New features and improvements' },
+              { key: 'investor_alerts', label: 'Investor Alerts', desc: 'Pipeline changes and investor activity' },
+              { key: 'team_notifications', label: 'Team Notifications', desc: 'Team member updates and assignments' },
+            ] as { key: keyof NotificationPreferencesUpdate; label: string; desc: string }[]).map((item) => (
+              <div key={item.key} className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white">{item.label}</div>
+                  <div className="text-xs text-[#6b7280]">{item.desc}</div>
+                </div>
+                <Switch
+                  checked={notifPrefs[item.key]}
+                  onCheckedChange={(checked) => handleNotifToggle(item.key, checked)}
+                  disabled={notifLoading}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Danger Zone */}
         <div className="mt-8 bg-[#141414] border border-red-500/20 rounded-2xl p-6">
           <h2 className="text-lg font-bold text-red-400 mb-2">Danger Zone</h2>
@@ -260,9 +337,9 @@ export default function Settings() {
 
         <footer className="mt-10 pt-4 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
           <span>2024 FounderHub Mission Control</span>
-          <a href="#" className="hover:text-[#6b7280]">Privacy Policy</a>
-          <a href="#" className="hover:text-[#6b7280]">Terms of Service</a>
-          <a href="#" className="hover:text-[#6b7280]">Support</a>
+          <Link to="/privacy" className="hover:text-[#9ca3af] transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-[#9ca3af] transition-colors">Terms of Service</Link>
+          <Link to="/support" className="hover:text-[#9ca3af] transition-colors">Support</Link>
         </footer>
       </div>
     </div>

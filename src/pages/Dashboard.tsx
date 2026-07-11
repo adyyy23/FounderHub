@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'rec
 import { investorService, type Investor } from '@/services/investors';
 import { activityService, type ActivityLog } from '@/services/activity';
 import { goalService, type Goal } from '@/services/goals';
+import { metricsService } from '@/services/metrics';
 import { useAuth } from '@/contexts/AuthContext';
 import AIInsightsModal from '@/components/AIInsightsModal';
 import { generateDashboardInsights, type AIAnalysisResult } from '@/lib/aiInsights';
@@ -14,24 +15,6 @@ interface GrowthData {
   arr: number;
   target: number;
 }
-
-const mockGrowthData: GrowthData[] = [
-  { month: 'Jan', arr: 800000, target: 1000000 },
-  { month: 'Feb', arr: 1100000, target: 1500000 },
-  { month: 'Mar', arr: 1600000, target: 2000000 },
-  { month: 'Apr', arr: 2200000, target: 2800000 },
-  { month: 'May', arr: 3200000, target: 3500000 },
-  { month: 'Jun', arr: 4200000, target: 4500000 },
-];
-
-const variantBData: GrowthData[] = [
-  { month: 'Jan', arr: 600000, target: 900000 },
-  { month: 'Feb', arr: 900000, target: 1300000 },
-  { month: 'Mar', arr: 1400000, target: 1800000 },
-  { month: 'Apr', arr: 2000000, target: 2500000 },
-  { month: 'May', arr: 2800000, target: 3200000 },
-  { month: 'Jun', arr: 3800000, target: 4200000 },
-];
 
 const formatCurrency = (val: number) => {
   if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
@@ -45,6 +28,7 @@ export default function Dashboard() {
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [metricsData, setMetricsData] = useState<GrowthData[]>([]);
   const [showInsights, setShowInsights] = useState(false);
   const [variant, setVariant] = useState<'A' | 'B'>(() => {
     return (localStorage.getItem('dashboardVariant') as 'A' | 'B') || 'A';
@@ -62,12 +46,17 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [investorData, activityData, goalData, investorStats] = await Promise.all([
+      const [investorData, activityData, goalData, investorStats, monthlyMetrics] = await Promise.all([
         investorService.getAll(),
         activityService.getRecent(10),
         goalService.getAll(),
         investorService.getStats(),
+        metricsService.getMonthlyMetrics(),
       ]);
+
+      const growthData: GrowthData[] = monthlyMetrics.length > 0
+        ? monthlyMetrics.map((m) => ({ month: m.month, arr: m.arr, target: m.target }))
+        : [];
 
       const topInvestors = investorData
         .filter((inv) => inv.commitment && inv.commitment > 0)
@@ -77,6 +66,7 @@ export default function Dashboard() {
       setInvestors(topInvestors);
       setActivities(activityData);
       setGoals(goalData);
+      setMetricsData(growthData);
       setStats({
         totalCommitment: investorStats.totalCommitment,
         investorCount: investorStats.total,
@@ -349,7 +339,7 @@ export default function Dashboard() {
           </div>
           <div className="h-[220px] mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={variant === 'A' ? mockGrowthData : variantBData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+              <AreaChart data={metricsData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="arrGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
@@ -440,9 +430,9 @@ export default function Dashboard() {
       {/* Footer */}
       <footer className="mt-8 pt-4 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
         <span>2024 FounderHub Mission Control</span>
-        <span className="cursor-not-allowed opacity-60">Privacy Policy</span>
-        <span className="cursor-not-allowed opacity-60">Terms of Service</span>
-        <span className="cursor-not-allowed opacity-60">Support</span>
+        <Link to="/privacy" className="hover:text-[#9ca3af] transition-colors">Privacy Policy</Link>
+        <Link to="/terms" className="hover:text-[#9ca3af] transition-colors">Terms of Service</Link>
+        <Link to="/support" className="hover:text-[#9ca3af] transition-colors">Support</Link>
       </footer>
 
       <AIInsightsModal

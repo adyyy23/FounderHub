@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import Logo from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Suspense, lazy } from 'react';
@@ -24,6 +25,9 @@ const SearchResults = lazy(() => import('@/pages/SearchResults'));
 const GoalArchive = lazy(() => import('@/pages/GoalArchive'));
 const IdeaSpec = lazy(() => import('@/pages/IdeaSpec'));
 const TeamBacklog = lazy(() => import('@/pages/TeamBacklog'));
+const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('@/pages/TermsOfService'));
+const SupportCenter = lazy(() => import('@/pages/SupportCenter'));
 
 import './App.css';
 
@@ -31,9 +35,7 @@ function PageLoader() {
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold text-xl">F</span>
-        </div>
+        <Logo size={48} />
         <Loader2 size={24} className="text-orange-500 animate-spin" />
       </div>
     </div>
@@ -76,6 +78,9 @@ function AppRoutes() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/support" element={<SupportCenter />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>

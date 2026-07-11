@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { TrendingUp, TrendingDown, Shield, Mail, Map, Target, Lightbulb, Plus, Zap, Send, Loader as Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Shield, Mail, Map, Target, Lightbulb, Zap, Send, Loader as Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { aiAdvisorService, type ChatMessage } from '@/services/aiAdvisor';
 import { investorService } from '@/services/investors';
@@ -254,9 +254,6 @@ export default function AIAdvisor() {
               placeholder="Ask the Advisor anything about your strategy, team, or runway..."
               className="flex-1 bg-transparent text-sm text-[#9ca3af] placeholder-[#4b5563] focus:outline-none focus:text-white"
             />
-            <button className="text-[#4b5563] hover:text-[#9ca3af] transition-colors">
-              <Plus size={16} />
-            </button>
             <button
               onClick={() => handleSend()}
               disabled={loading || !inputValue.trim()}
@@ -282,9 +279,9 @@ export default function AIAdvisor() {
         {/* Footer */}
         <footer className="px-6 py-3 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
           <span>© 2024 FounderHub Mission Control</span>
-          <span className="cursor-not-allowed opacity-60">Privacy Policy</span>
-          <span className="cursor-not-allowed opacity-60">Terms of Service</span>
-          <span className="cursor-not-allowed opacity-60">Support</span>
+          <Link to="/privacy" className="hover:text-[#9ca3af] transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-[#9ca3af] transition-colors">Terms of Service</Link>
+          <Link to="/support" className="hover:text-[#9ca3af] transition-colors">Support</Link>
         </footer>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, ArrowLeft, Users, Target, Lightbulb, Map, SquareCheck as CheckSquare, User, Loader as Loader2 } from 'lucide-react';
+import { Search, ArrowLeft, Users, Target, Lightbulb, Map, SquareCheck as CheckSquare, User, Loader as Loader2, Clock, X } from 'lucide-react';
 import { searchService, type SearchResult } from '@/services/search';
 
 const typeConfig: Record<string, { icon: typeof Users; label: string; color: string }> = {
@@ -19,10 +19,17 @@ export default function SearchResults() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  useEffect(() => {
+    setRecentSearches(searchService.getRecentSearches());
+  }, []);
 
   useEffect(() => {
     if (query) {
       doSearch(query);
+      searchService.saveRecentSearch(query);
+      setRecentSearches(searchService.getRecentSearches());
     } else {
       setResults([]);
       setLoading(false);
@@ -39,6 +46,15 @@ export default function SearchResults() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRecentSearchClick = (term: string) => {
+    navigate(`/search?q=${encodeURIComponent(term)}`);
+  };
+
+  const handleClearRecent = () => {
+    searchService.clearRecentSearches();
+    setRecentSearches([]);
   };
 
   const filtered = filter === 'all' ? results : results.filter((r) => r.type === filter);
@@ -63,6 +79,36 @@ export default function SearchResults() {
           </p>
         </div>
       </div>
+
+      {!query && !loading && recentSearches.length > 0 && (
+        <div className="mb-6 bg-[#141414] border border-[#1e1e1e] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-[#6b7280] text-xs font-semibold uppercase tracking-wider">
+              <Clock size={14} />
+              Recent Searches
+            </div>
+            <button
+              onClick={handleClearRecent}
+              className="flex items-center gap-1 text-[#6b7280] hover:text-white text-xs transition-colors"
+            >
+              <X size={12} />
+              Clear
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {recentSearches.map((term) => (
+              <button
+                key={term}
+                onClick={() => handleRecentSearchClick(term)}
+                className="flex items-center gap-2 bg-[#1e1e1e] hover:bg-[#2a2a2a] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-full px-3 py-1.5 text-sm text-white transition-colors"
+              >
+                <Clock size={12} className="text-[#6b7280]" />
+                {term}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {types.length > 1 && (
         <div className="flex items-center gap-2 mb-6 flex-wrap">

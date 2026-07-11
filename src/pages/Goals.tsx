@@ -647,9 +647,9 @@ export default function Goals() {
 
       <footer className="mt-10 pt-4 border-t border-[#1e1e1e] flex items-center justify-center gap-6 text-[#4b5563] text-xs">
         <span>2024 FounderHub Mission Control</span>
-        <a href="#" className="hover:text-[#6b7280]">Privacy Policy</a>
-        <a href="#" className="hover:text-[#6b7280]">Terms of Service</a>
-        <a href="#" className="hover:text-[#6b7280]">Support</a>
+        <Link to="/privacy" className="hover:text-[#9ca3af] transition-colors">Privacy Policy</Link>
+        <Link to="/terms" className="hover:text-[#9ca3af] transition-colors">Terms of Service</Link>
+        <Link to="/support" className="hover:text-[#9ca3af] transition-colors">Support</Link>
       </footer>
 
       <GoalFormDialog
