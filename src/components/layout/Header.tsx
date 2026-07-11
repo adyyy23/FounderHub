@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus, Bell, Settings, LogOut, User, Check } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, Plus, Bell, Settings, LogOut, User, Check, Trash2, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationService, type Notification as NotificationType } from '@/services/notifications';
 import { cn } from '@/lib/utils';
 
 export default function Header() {
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -56,6 +57,28 @@ export default function Header() {
     }
   };
 
+  const markAsUnread = async (id: string) => {
+    try {
+      await notificationService.markAsUnread(id);
+      setNotifications(prev =>
+        prev.map(n => (n.id === id ? { ...n, read_at: null } : n))
+      );
+      setUnreadCount(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to mark as unread:', err);
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      await notificationService.delete(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
   const markAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
@@ -71,7 +94,7 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      console.log('Search:', searchQuery);
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -163,11 +186,10 @@ export default function Header() {
                   </div>
                 ) : (
                   notifications.map((notification) => (
-                    <button
+                    <div
                       key={notification.id}
-                      onClick={() => markAsRead(notification.id)}
                       className={cn(
-                        'w-full text-left px-4 py-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors cursor-pointer',
+                        'w-full text-left px-4 py-3 border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors group',
                         !notification.read_at && 'bg-[#1a1008]'
                       )}
                     >
@@ -191,11 +213,34 @@ export default function Header() {
                             {formatTimeAgo(notification.created_at)}
                           </p>
                         </div>
-                        {!notification.read_at && (
-                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full flex-shrink-0" />
-                        )}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {notification.read_at ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); markAsUnread(notification.id); }}
+                              className="text-[#4b5563] hover:text-white p-1"
+                              title="Mark as unread"
+                            >
+                              <Mail size={11} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}
+                              className="text-[#4b5563] hover:text-white p-1"
+                              title="Mark as read"
+                            >
+                              <Check size={11} />
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteNotification(notification.id); }}
+                            className="text-[#4b5563] hover:text-red-400 p-1"
+                            title="Delete"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   ))
                 )}
               </div>

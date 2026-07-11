@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Zap, ChartBar as BarChart2, Calendar, ArrowUpRight, Plus, Loader as Loader2, CreditCard as Edit2, Trash2, Check, Target, Sparkles } from 'lucide-react';
+import { Zap, ChartBar as BarChart2, Calendar, ArrowUpRight, Plus, Loader as Loader2, CreditCard as Edit2, Trash2, Check, Target, Sparkles, Archive } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { goalService, type Goal, type KeyResult, type GoalCategory } from '@/services/goals';
 import { useToast } from '@/hooks/use-toast';
 import AIInsightsModal from '@/components/AIInsightsModal';
@@ -26,7 +27,7 @@ interface KeyResultDisplay {
   inverse?: boolean;
 }
 
-function GoalCard({ goal, onEdit, onDelete, onComplete }: { goal: Goal; onEdit: (goal: Goal) => void; onDelete: (id: string) => void; onComplete: (id: string) => void }) {
+function GoalCard({ goal, onEdit, onDelete, onComplete, onArchive }: { goal: Goal; onEdit: (goal: Goal) => void; onDelete: (id: string) => void; onComplete: (id: string) => void; onArchive: (id: string) => void }) {
   const fillPct = Math.min(100, goal.completion);
   const category = goal.category?.toLowerCase() || 'default';
   const colors = categoryColors[category] || categoryColors.default;
@@ -127,6 +128,13 @@ function GoalCard({ goal, onEdit, onDelete, onComplete }: { goal: Goal; onEdit: 
               Complete
             </button>
           )}
+          <button
+            onClick={() => onArchive(goal.id)}
+            className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-orange-400 transition-colors"
+          >
+            <Archive size={13} />
+            Archive
+          </button>
           <button
             onClick={() => onDelete(goal.id)}
             className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-red-400 transition-colors"
@@ -357,6 +365,17 @@ export default function Goals() {
     }
   };
 
+  const handleArchive = async (id: string) => {
+    try {
+      await goalService.archive(id);
+      toast({ title: 'Goal archived' });
+      loadGoals();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Failed to archive goal', variant: 'destructive' });
+    }
+  };
+
   const handleComplete = async (id: string) => {
     try {
       await goalService.complete(id);
@@ -526,7 +545,7 @@ export default function Goals() {
 
           {filtered.length > 0 ? (
             filtered.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} onEdit={openEdit} onDelete={handleDelete} onComplete={handleComplete} />
+              <GoalCard key={goal.id} goal={goal} onEdit={openEdit} onDelete={handleDelete} onComplete={handleComplete} onArchive={handleArchive} />
             ))
           ) : (
             <div className="bg-[#141414] border border-[#1e1e1e] rounded-2xl p-8 text-center">
@@ -574,10 +593,10 @@ export default function Goals() {
                 ))}
               </div>
             </div>
-            <button className="mt-3 flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors">
+            <Link to="/goals/archive" className="mt-3 flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors">
               View Full Graph
               <ArrowUpRight size={11} />
-            </button>
+            </Link>
           </div>
 
           {/* Critical Milestones */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Filter, Plus, MessageSquare, Calendar, Zap, Loader as Loader2, CreditCard as Edit2, Trash2, Sparkles, X } from 'lucide-react';
 import { teamService, taskService, type TeamMember, type Task } from '@/services/team';
 import { useToast } from '@/hooks/use-toast';
@@ -278,6 +279,10 @@ export default function Team() {
   const [showForm, setShowForm] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [showInsights, setShowInsights] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [deptFilter, setDeptFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'workload' | 'department'>('name');
 
   useEffect(() => {
     loadData();
@@ -375,12 +380,21 @@ export default function Team() {
     return generateTeamInsights(members, tasks);
   }, [members, tasks]);
 
-  const filteredMembers = searchQuery
-    ? members.filter((m) =>
-        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.role?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : members;
+  const filteredMembers = members.filter((m) => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!m.name.toLowerCase().includes(q) && !m.role?.toLowerCase().includes(q)) return false;
+    }
+    if (deptFilter !== 'all' && (m.department || '').toLowerCase() !== deptFilter) return false;
+    if (statusFilter !== 'all' && m.status !== statusFilter) return false;
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'workload') return (b.workload || 0) - (a.workload || 0);
+    if (sortBy === 'department') return (a.department || '').localeCompare(b.department || '');
+    return a.name.localeCompare(b.name);
+  });
+  const activeFilters = (deptFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
+  const clearFilters = () => { setDeptFilter('all'); setStatusFilter('all'); setSearchQuery(''); };
 
   const urgentTasks = tasks.filter((t) => t.priority === 'urgent').slice(0, 6);
 
@@ -436,9 +450,15 @@ export default function Team() {
                 <Sparkles size={12} />
                 AI Insights
               </button>
-              <button className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] text-[#9ca3af] text-xs font-medium px-3 py-2 rounded-lg">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 bg-[#161616] border ${activeFilters > 0 ? 'border-orange-500/50 text-orange-400' : 'border-[#1e1e1e] hover:border-[#2a2a2a] text-[#9ca3af]'} text-xs font-medium px-3 py-2 rounded-lg transition-colors`}
+              >
                 <Filter size={12} />
                 Filter
+                {activeFilters > 0 && (
+                  <span className="bg-orange-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{activeFilters}</span>
+                )}
               </button>
               <button
                 onClick={openCreate}
@@ -461,6 +481,53 @@ export default function Team() {
               className="w-full bg-[#141414] border border-[#1e1e1e] rounded-xl pl-10 pr-4 py-3 text-sm text-[#9ca3af] placeholder-[#4b5563] focus:outline-none focus:border-[#2a2a2a] transition-colors"
             />
           </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="bg-[#141414] border border-[#1e1e1e] rounded-2xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-bold text-white">Filters</span>
+                {activeFilters > 0 && (
+                  <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-[#6b7280] hover:text-white transition-colors">
+                    <X size={11} /> Clear all
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-medium text-[#6b7280] mb-1.5 block uppercase tracking-wider">Department</label>
+                  <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                    <option value="all">All Departments</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="product">Product</option>
+                    <option value="design">Design</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="growth">Growth</option>
+                    <option value="operations">Operations</option>
+                    <option value="infra">Infra</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[#6b7280] mb-1.5 block uppercase tracking-wider">Status</label>
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="on_leave">On Leave</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[#6b7280] mb-1.5 block uppercase tracking-wider">Sort By</label>
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'name' | 'workload' | 'department')} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                    <option value="name">Name</option>
+                    <option value="workload">Workload</option>
+                    <option value="department">Department</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-[#1e1e1e] text-xs text-[#6b7280]">{filteredMembers.length} of {members.length} members</div>
+            </div>
+          )}
 
           {/* Team Grid */}
           {filteredMembers.length > 0 ? (
@@ -661,9 +728,9 @@ export default function Team() {
           ) : (
             <p className="text-xs text-[#6b7280]">No urgent tasks. Team workload is manageable.</p>
           )}
-          <button className="mt-3 w-full text-center text-xs text-[#6b7280] hover:text-white py-1.5 transition-colors">
+          <Link to="/team/backlog" className="mt-3 w-full text-center text-xs text-[#6b7280] hover:text-white py-1.5 transition-colors block">
             View Full Backlog
-          </button>
+          </Link>
         </div>
 
         {/* Resource Allocation */}

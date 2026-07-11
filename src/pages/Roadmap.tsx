@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, ChevronDown, Plus, Calendar, Loader as Loader2, CreditCard as Edit2, Trash2, Check, Sparkles } from 'lucide-react';
+import { Search, ChevronDown, Plus, Calendar, Loader as Loader2, CreditCard as Edit2, Trash2, Check, Sparkles, Filter, X } from 'lucide-react';
 import { roadmapService, type RoadmapItem, type RoadmapStatus, type RoadmapPriority } from '@/services/roadmap';
 import { useToast } from '@/hooks/use-toast';
 import AIInsightsModal from '@/components/AIInsightsModal';
@@ -218,6 +218,11 @@ export default function Roadmap() {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<RoadmapItem | null>(null);
   const [showInsights, setShowInsights] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<RoadmapStatus | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<RoadmapPriority | 'all'>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
 
   useEffect(() => {
     loadItems();
@@ -325,8 +330,32 @@ export default function Roadmap() {
     return generateRoadmapInsights(items);
   }, [items]);
 
-  const backlogItems = items.filter((i) => i.status === 'backlog' || !i.start_date);
-  const activeItems = items.filter((i) => i.status === 'in_progress' && i.start_date);
+  const filteredItems = items.filter((i) => {
+    if (statusFilter !== 'all' && i.status !== statusFilter) return false;
+    if (priorityFilter !== 'all' && i.priority !== priorityFilter) return false;
+    if (assigneeFilter !== 'all') {
+      if (assigneeFilter === 'unassigned' && i.assignee) return false;
+      if (assigneeFilter !== 'unassigned' && i.assignee !== assigneeFilter) return false;
+    }
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const itemDate = i.end_date ? new Date(i.end_date) : i.start_date ? new Date(i.start_date) : null;
+      if (!itemDate && dateFilter !== 'none') return false;
+      if (dateFilter === 'overdue' && (!itemDate || itemDate >= now || i.status === 'completed')) return false;
+      if (dateFilter === 'thisMonth' && (!itemDate || itemDate.getMonth() !== now.getMonth())) return false;
+      if (dateFilter === 'nextMonth' && (!itemDate || itemDate.getMonth() !== (now.getMonth() + 1) % 12)) return false;
+      if (dateFilter === 'none' && itemDate) return false;
+    }
+    if (searchQuery && !i.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  const activeFilters = (statusFilter !== 'all' ? 1 : 0) + (priorityFilter !== 'all' ? 1 : 0) + (assigneeFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
+  const clearFilters = () => { setStatusFilter('all'); setPriorityFilter('all'); setAssigneeFilter('all'); setDateFilter('all'); setSearchQuery(''); };
+  const uniqueAssignees = [...new Set(items.map((i) => i.assignee).filter(Boolean))] as string[];
+
+  const backlogItems = filteredItems.filter((i) => i.status === 'backlog' || !i.start_date);
+  const activeItems = filteredItems.filter((i) => i.status === 'in_progress' && i.start_date);
 
   const ganttItems = activeItems.slice(0, 5).map((item, idx) => {
     const startDate = item.start_date ? new Date(item.start_date) : new Date();
@@ -357,7 +386,7 @@ export default function Roadmap() {
     };
   });
 
-  const unassignedCount = backlogItems.length + items.filter((i) => !i.assignee).length;
+  const unassignedCount = items.filter((i) => !i.assignee).length;
 
   if (loading) {
     return (
@@ -536,6 +565,16 @@ export default function Roadmap() {
               </button>
             </div>
             <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 bg-[#161616] border ${activeFilters > 0 ? 'border-orange-500/50 text-orange-400' : 'border-[#1e1e1e] hover:border-[#2a2a2a] text-[#9ca3af]'} text-xs font-medium px-3 py-2 rounded-lg transition-colors`}
+            >
+              <Filter size={12} />
+              Filter
+              {activeFilters > 0 && (
+                <span className="bg-orange-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{activeFilters}</span>
+              )}
+            </button>
+            <button
               onClick={() => setShowInsights(true)}
               className="flex items-center gap-2 bg-[#161616] border border-[#1e1e1e] hover:border-orange-500/50 text-[#9ca3af] hover:text-orange-400 text-xs font-medium px-3 py-2 rounded-lg transition-colors"
             >
@@ -551,6 +590,62 @@ export default function Roadmap() {
             </button>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="bg-[#141414] border border-[#1e1e1e] rounded-2xl p-4 mx-8 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-bold text-white">Filters</span>
+              {activeFilters > 0 && (
+                <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-[#6b7280] hover:text-white transition-colors">
+                  <X size={11} /> Clear all
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <label className="text-[10px] font-medium text-[#6b7280] mb-1.5 block uppercase tracking-wider">Status</label>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as RoadmapStatus | 'all')} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                  <option value="all">All Statuses</option>
+                  <option value="backlog">Backlog</option>
+                  <option value="planned">Planned</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[#6b7280] mb-1.5 block uppercase tracking-wider">Priority</label>
+                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as RoadmapPriority | 'all')} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                  <option value="all">All Priorities</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[#6b7280] mb-1.5 block uppercase tracking-wider">Assignee</label>
+                <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                  <option value="all">All Assignees</option>
+                  <option value="unassigned">Unassigned</option>
+                  {uniqueAssignees.map((a) => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[#6b7280] mb-1.5 block uppercase tracking-wider">Date</label>
+                <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                  <option value="all">All Dates</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="thisMonth">This Month</option>
+                  <option value="nextMonth">Next Month</option>
+                  <option value="none">No Date</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-[#1e1e1e] text-xs text-[#6b7280]">{filteredItems.length} of {items.length} items</div>
+          </div>
+        )}
 
         {/* Gantt Chart */}
         <div className="flex-1 overflow-auto">
@@ -688,11 +783,11 @@ export default function Roadmap() {
           )}
 
           {/* All items list with edit/delete/complete */}
-          {items.length > 0 && (
+          {filteredItems.length > 0 && (
             <div className="px-8 py-6 border-t border-[#1e1e1e]">
               <h3 className="text-sm font-bold text-white mb-4">All Initiatives</h3>
               <div className="space-y-2">
-                {items.map((item) => {
+                {filteredItems.map((item) => {
                   const priority = (item.priority || 'medium').toLowerCase();
                   const priorityStyle = priorityColors[priority] || priorityColors.medium;
                   return (

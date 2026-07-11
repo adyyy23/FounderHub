@@ -20,6 +20,10 @@ const Metrics = lazy(() => import('@/pages/Metrics'));
 const Roadmap = lazy(() => import('@/pages/Roadmap'));
 const Team = lazy(() => import('@/pages/Team'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const SearchResults = lazy(() => import('@/pages/SearchResults'));
+const GoalArchive = lazy(() => import('@/pages/GoalArchive'));
+const IdeaSpec = lazy(() => import('@/pages/IdeaSpec'));
+const TeamBacklog = lazy(() => import('@/pages/TeamBacklog'));
 
 import './App.css';
 
@@ -80,13 +84,18 @@ function AppRoutes() {
             <Route path="/advisor" element={<AIAdvisor />} />
             <Route path="/investors" element={<Investors />} />
             <Route path="/investors/new" element={<AddInvestor />} />
+            <Route path="/investors/:id/edit" element={<AddInvestor />} />
             <Route path="/investors/:id" element={<InvestorProfile />} />
             <Route path="/ideas" element={<IdeaVault />} />
+            <Route path="/ideas/:id" element={<IdeaSpec />} />
             <Route path="/goals" element={<Goals />} />
+            <Route path="/goals/archive" element={<GoalArchive />} />
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/team" element={<Team />} />
+            <Route path="/team/backlog" element={<TeamBacklog />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/search" element={<SearchResults />} />
           </Route>
         </Route>
 

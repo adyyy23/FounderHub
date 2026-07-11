@@ -6,33 +6,12 @@ import { Download, Database, RefreshCw, Loader as Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { investorService } from '@/services/investors';
 import { goalService } from '@/services/goals';
+import { ideaService } from '@/services/ideas';
+import { roadmapService } from '@/services/roadmap';
+import { teamService } from '@/services/team';
+import { useToast } from '@/hooks/use-toast';
 
 type Period = '3M' | '6M' | '1Y';
-
-const revenueData = {
-  '3M': [
-    { month: 'May', arr: 240000, burn: 120000 },
-    { month: 'Jun', arr: 270000, burn: 125000 },
-    { month: 'Jul', arr: 320000, burn: 128000 },
-  ],
-  '6M': [
-    { month: 'Feb', arr: 160000, burn: 110000 },
-    { month: 'Mar', arr: 180000, burn: 112000 },
-    { month: 'Apr', arr: 200000, burn: 115000 },
-    { month: 'May', arr: 240000, burn: 120000 },
-    { month: 'Jun', arr: 270000, burn: 125000 },
-    { month: 'Jul', arr: 320000, burn: 128000 },
-  ],
-  '1Y': [
-    { month: 'Jan', arr: 80000, burn: 95000 },
-    { month: 'Feb', arr: 160000, burn: 110000 },
-    { month: 'Mar', arr: 180000, burn: 112000 },
-    { month: 'Apr', arr: 200000, burn: 115000 },
-    { month: 'May', arr: 240000, burn: 120000 },
-    { month: 'Jun', arr: 270000, burn: 125000 },
-    { month: 'Jul', arr: 320000, burn: 128000 },
-  ],
-};
 
 const sparkData = (seed: number) =>
   Array.from({ length: 7 }, (_, i) => ({ v: Math.sin(i * 0.8 + seed) * 2 + seed * 0.5 + 3 }));
@@ -60,19 +39,38 @@ const formatCurrency = (v: number) => {
   return `$${v}`;
 };
 
+function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
+  const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${c}"`).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export default function Metrics() {
+  const { toast } = useToast();
   const [period, setPeriod] = useState<Period>('6M');
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [kpis, setKpis] = useState<{
     totalCommitment: number;
     investorCount: number;
     goalCompletion: number;
     goalCount: number;
+    ideaCount: number;
+    roadmapCount: number;
+    teamCount: number;
+    activeGoals: number;
+    completedGoals: number;
+    avgConfidence: number;
   }>({
-    totalCommitment: 0,
-    investorCount: 0,
-    goalCompletion: 0,
-    goalCount: 0,
+    totalCommitment: 0, investorCount: 0, goalCompletion: 0, goalCount: 0,
+    ideaCount: 0, roadmapCount: 0, teamCount: 0, activeGoals: 0, completedGoals: 0, avgConfidence: 0,
   });
 
   useEffect(() => {
@@ -81,13 +79,22 @@ export default function Metrics() {
 
   const loadMetrics = async () => {
     try {
-      const [investorStats, goals] = await Promise.all([
+      const [investorStats, goals, ideas, roadmap, members] = await Promise.all([
         investorService.getStats(),
         goalService.getAll(),
+        ideaService.getAll(),
+        roadmapService.getAll(),
+        teamService.getAll(),
       ]);
 
-      const avgCompletion = goals.length > 0
-        ? Math.round(goals.reduce((sum, g) => sum + g.completion, 0) / goals.length)
+      const activeGoals = goals.filter((g) => g.status === 'active');
+      const completedGoals = goals.filter((g) => g.status === 'completed');
+      const avgCompletion = activeGoals.length > 0
+        ? Math.round(activeGoals.reduce((sum, g) => sum + g.completion, 0) / activeGoals.length)
+        : 0;
+      const confidences = goals.filter((g) => g.confidence);
+      const avgConfidence = confidences.length > 0
+        ? Math.round((confidences.filter((g) => g.confidence === 'HIGH').length * 100 + confidences.filter((g) => g.confidence === 'MEDIUM').length * 60 + confidences.filter((g) => g.confidence === 'LOW').length * 30) / confidences.length)
         : 0;
 
       setKpis({
@@ -95,6 +102,12 @@ export default function Metrics() {
         investorCount: investorStats.total,
         goalCompletion: avgCompletion,
         goalCount: goals.length,
+        ideaCount: ideas.length,
+        roadmapCount: roadmap.length,
+        teamCount: members.length,
+        activeGoals: activeGoals.length,
+        completedGoals: completedGoals.length,
+        avgConfidence,
       });
     } catch (err) {
       console.error('Failed to load metrics:', err);
@@ -103,63 +116,103 @@ export default function Metrics() {
     }
   };
 
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const [investors, goals, ideas, roadmap, members] = await Promise.all([
+        investorService.getAll(),
+        goalService.getAll(),
+        ideaService.getAll(),
+        roadmapService.getAll(),
+        teamService.getAll(),
+      ]);
+
+      const timestamp = new Date().toISOString().split('T')[0];
+
+      downloadCSV(`founderhub-metrics-${timestamp}.csv`,
+        ['Metric', 'Value'],
+        [
+          ['Total Commitment', formatCurrency(kpis.totalCommitment)],
+          ['Active Investors', kpis.investorCount],
+          ['Goal Progress (%)', kpis.goalCompletion],
+          ['Total Goals', kpis.goalCount],
+          ['Active Goals', kpis.activeGoals],
+          ['Completed Goals', kpis.completedGoals],
+          ['Avg Confidence (%)', kpis.avgConfidence],
+          ['Total Ideas', kpis.ideaCount],
+          ['Roadmap Items', kpis.roadmapCount],
+          ['Team Members', kpis.teamCount],
+        ]
+      );
+
+      downloadCSV(`founderhub-investors-${timestamp}.csv`,
+        ['Name', 'Firm', 'Stage', 'Sentiment', 'Commitment', 'Location', 'Email'],
+        investors.map((inv) => [inv.name, inv.firm || '', inv.stage, inv.sentiment || '', inv.commitment || 0, inv.location || '', inv.email || ''])
+      );
+
+      downloadCSV(`founderhub-goals-${timestamp}.csv`,
+        ['Title', 'Category', 'Status', 'Completion (%)', 'Confidence', 'Due Date'],
+        goals.map((g) => [g.title, g.category || '', g.status, g.completion, g.confidence || '', g.due_date || ''])
+      );
+
+      downloadCSV(`founderhub-ideas-${timestamp}.csv`,
+        ['Title', 'Category', 'Status', 'Impact', 'Confidence', 'Effort'],
+        ideas.map((i) => [i.title, i.category || '', i.status, i.impact || 0, i.confidence || 0, i.effort || 0])
+      );
+
+      downloadCSV(`founderhub-roadmap-${timestamp}.csv`,
+        ['Title', 'Status', 'Priority', 'Progress (%)', 'Start Date', 'End Date', 'Assignee'],
+        roadmap.map((r) => [r.title, r.status, r.priority, r.progress, r.start_date || '', r.end_date || '', r.assignee || ''])
+      );
+
+      downloadCSV(`founderhub-team-${timestamp}.csv`,
+        ['Name', 'Role', 'Department', 'Workload (%)', 'Status', 'Email'],
+        members.map((m) => [m.name, m.role || '', m.department || '', m.workload || 0, m.status || 'active', m.email || ''])
+      );
+
+      toast({ title: 'CSV export downloaded', description: '6 CSV files exported successfully' });
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast({ title: 'Export failed', variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const revenueData = {
+    '3M': [
+      { month: 'May', arr: Math.max(kpis.totalCommitment * 0.3, 80000), burn: 120000 },
+      { month: 'Jun', arr: Math.max(kpis.totalCommitment * 0.35, 100000), burn: 125000 },
+      { month: 'Jul', arr: Math.max(kpis.totalCommitment * 0.4, 120000), burn: 128000 },
+    ],
+    '6M': [
+      { month: 'Feb', arr: Math.max(kpis.totalCommitment * 0.2, 60000), burn: 110000 },
+      { month: 'Mar', arr: Math.max(kpis.totalCommitment * 0.25, 70000), burn: 112000 },
+      { month: 'Apr', arr: Math.max(kpis.totalCommitment * 0.28, 75000), burn: 115000 },
+      { month: 'May', arr: Math.max(kpis.totalCommitment * 0.3, 80000), burn: 120000 },
+      { month: 'Jun', arr: Math.max(kpis.totalCommitment * 0.35, 100000), burn: 125000 },
+      { month: 'Jul', arr: Math.max(kpis.totalCommitment * 0.4, 120000), burn: 128000 },
+    ],
+    '1Y': [
+      { month: 'Jan', arr: Math.max(kpis.totalCommitment * 0.1, 30000), burn: 95000 },
+      { month: 'Feb', arr: Math.max(kpis.totalCommitment * 0.2, 60000), burn: 110000 },
+      { month: 'Mar', arr: Math.max(kpis.totalCommitment * 0.25, 70000), burn: 112000 },
+      { month: 'Apr', arr: Math.max(kpis.totalCommitment * 0.28, 75000), burn: 115000 },
+      { month: 'May', arr: Math.max(kpis.totalCommitment * 0.3, 80000), burn: 120000 },
+      { month: 'Jun', arr: Math.max(kpis.totalCommitment * 0.35, 100000), burn: 125000 },
+      { month: 'Jul', arr: Math.max(kpis.totalCommitment * 0.4, 120000), burn: 128000 },
+    ],
+  };
+
   const kpiCards = [
-    {
-      label: 'Total Commitment',
-      value: formatCurrency(kpis.totalCommitment),
-      change: kpis.investorCount > 0 ? `+${Math.round(kpis.totalCommitment / 10000)}%` : '0%',
-      positive: true,
-      spark: sparkData(1),
-    },
-    {
-      label: 'Active Investors',
-      value: kpis.investorCount.toString(),
-      change: '+8.2%',
-      positive: true,
-      spark: sparkData(2),
-    },
-    {
-      label: 'Goal Progress',
-      value: `${kpis.goalCompletion}%`,
-      change: '+4.0%',
-      positive: true,
-      spark: sparkData(0.5),
-    },
-    {
-      label: 'Total Goals',
-      value: kpis.goalCount.toString(),
-      change: '+2',
-      positive: true,
-      spark: sparkData(3),
-    },
-    {
-      label: 'RUNWAY',
-      value: '14.2m',
-      change: '+1.5%',
-      positive: true,
-      spark: sparkData(2),
-    },
-    {
-      label: 'NPS SCORE',
-      value: '72',
-      change: '+5%',
-      positive: true,
-      spark: sparkData(3.5),
-    },
-    {
-      label: 'Burn Multiple',
-      value: '0.8x',
-      change: 'Excellent',
-      positive: true,
-      spark: sparkData(1.5),
-    },
-    {
-      label: 'LTV/CAC',
-      value: '4.8x',
-      change: '+0.6%',
-      positive: true,
-      spark: sparkData(2.5),
-    },
+    { label: 'Total Commitment', value: formatCurrency(kpis.totalCommitment), change: kpis.investorCount > 0 ? `${kpis.investorCount} investors` : 'No investors', positive: true, spark: sparkData(1) },
+    { label: 'Active Investors', value: kpis.investorCount.toString(), change: kpis.investorCount > 0 ? 'Active' : 'Empty', positive: true, spark: sparkData(2) },
+    { label: 'Goal Progress', value: `${kpis.goalCompletion}%`, change: `${kpis.activeGoals} active`, positive: true, spark: sparkData(0.5) },
+    { label: 'Total Goals', value: kpis.goalCount.toString(), change: `${kpis.completedGoals} completed`, positive: true, spark: sparkData(3) },
+    { label: 'RUNWAY', value: kpis.totalCommitment > 0 ? `${(kpis.totalCommitment / 128000).toFixed(1)}m` : 'N/A', change: kpis.totalCommitment > 0 ? 'Calculated' : 'No data', positive: true, spark: sparkData(2) },
+    { label: 'IDEAS', value: kpis.ideaCount.toString(), change: kpis.ideaCount > 0 ? 'Captured' : 'Empty', positive: true, spark: sparkData(3.5) },
+    { label: 'ROADMAP', value: kpis.roadmapCount.toString(), change: `${kpis.roadmapCount} items`, positive: true, spark: sparkData(1.5) },
+    { label: 'TEAM SIZE', value: kpis.teamCount.toString(), change: kpis.teamCount > 0 ? 'Members' : 'No team', positive: true, spark: sparkData(2.5) },
   ];
 
   if (loading) {
@@ -187,17 +240,18 @@ export default function Metrics() {
           </p>
         </div>
         <div className="flex items-center gap-3 mt-1">
-          <div className="flex items-center gap-2 text-xs text-[#6b7280] bg-[#141414] border border-[#1e1e1e] px-3 py-2 rounded-lg">
-            <RefreshCw size={11} />
-            Last synced: just now
-          </div>
-          <button className="flex items-center gap-2 bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] text-[#9ca3af] text-xs font-medium px-3 py-2 rounded-lg transition-colors">
-            Settings
+          <button onClick={loadMetrics} className="flex items-center gap-2 text-xs text-[#6b7280] bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] px-3 py-2 rounded-lg transition-colors">
+            <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+            Refresh
           </button>
-          <a href="#" onClick={(e) => { e.preventDefault(); alert('Export functionality coming soon'); }} className="flex items-center gap-2 bg-[#141414] border border-[#1e1e1e] hover:border-orange-500/50 text-orange-400 text-xs font-medium px-3 py-2 rounded-lg transition-colors">
-            <Download size={12} />
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting}
+            className="flex items-center gap-2 bg-[#141414] border border-[#1e1e1e] hover:border-orange-500/50 text-orange-400 text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
             Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -252,39 +306,34 @@ export default function Metrics() {
           <div className="space-y-5">
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="text-[#6b7280] uppercase tracking-wider font-medium">Magic Number</span>
-                <span className="text-white font-bold text-lg">1.42</span>
+                <span className="text-[#6b7280] uppercase tracking-wider font-medium">Goal Confidence</span>
+                <span className="text-white font-bold text-lg">{kpis.avgConfidence}%</span>
               </div>
               <div className="w-full h-1.5 bg-[#2a2a2a] rounded-full">
-                <div className="h-full w-[71%] bg-orange-500 rounded-full" />
+                <div className="h-full bg-orange-500 rounded-full" style={{ width: `${kpis.avgConfidence}%` }} />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="text-[#6b7280] uppercase tracking-wider font-medium">Payback Period</span>
-                <span className="text-white font-bold text-lg">7.4 <span className="text-sm font-normal">MONTHS</span></span>
+                <span className="text-[#6b7280] uppercase tracking-wider font-medium">Goal Completion</span>
+                <span className="text-white font-bold text-lg">{kpis.goalCompletion}%</span>
               </div>
               <div className="w-full h-1.5 bg-[#2a2a2a] rounded-full">
-                <div className="h-full w-[62%] bg-orange-500 rounded-full" />
+                <div className="h-full bg-orange-500 rounded-full" style={{ width: `${kpis.goalCompletion}%` }} />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="text-[#6b7280] uppercase tracking-wider font-medium">Burn Multiple</span>
+                <span className="text-[#6b7280] uppercase tracking-wider font-medium">Runway</span>
                 <span className="text-white font-bold text-lg">
-                  0.8x <span className="text-xs text-green-400 font-medium">(EXCELLENT)</span>
+                  {kpis.totalCommitment > 0 ? `${(kpis.totalCommitment / 128000).toFixed(1)}m` : 'N/A'}
                 </span>
               </div>
               <div className="w-full h-1.5 bg-[#2a2a2a] rounded-full">
-                <div className="h-full w-[80%] bg-green-500 rounded-full" />
+                <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(100, (kpis.totalCommitment / 128000 / 18) * 100)}%` }} />
               </div>
             </div>
           </div>
-
-          <button className="mt-6 flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors">
-            View Detailed Insights
-            <span className="text-xs">...</span>
-          </button>
         </div>
       </div>
 
@@ -303,13 +352,7 @@ export default function Metrics() {
             <div className="h-10 -mx-4 -mb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={kpi.spark} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                  <Line
-                    type="monotone"
-                    dataKey="v"
-                    stroke="#f97316"
-                    strokeWidth={1.5}
-                    dot={false}
-                  />
+                  <Line type="monotone" dataKey="v" stroke="#f97316" strokeWidth={1.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -325,9 +368,6 @@ export default function Metrics() {
             <h3 className="text-base font-bold text-white">Cohort Explorer</h3>
             <p className="text-xs text-[#6b7280]">User retention analysis by acquisition month</p>
           </div>
-          <button className="flex items-center gap-2 bg-[#1a1a1a] border border-[#2a2a2a] text-[#9ca3af] text-xs font-medium px-3 py-1.5 rounded-lg hover:text-white transition-colors">
-            By Acquisition Channel
-          </button>
         </div>
 
         <div className="overflow-x-auto">

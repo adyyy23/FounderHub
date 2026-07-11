@@ -59,6 +59,17 @@ export const goalService = {
     return data || [];
   },
 
+  async getArchived(): Promise<Goal[]> {
+    const { data, error } = await supabase
+      .from('goals')
+      .select('*, key_results(*)')
+      .eq('status', 'archived')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
   async getById(id: string): Promise<Goal | null> {
     const { data, error } = await supabase
       .from('goals')
@@ -106,7 +117,43 @@ export const goalService = {
     return this.update(id, { status: 'archived' });
   },
 
+  async restore(id: string): Promise<Goal> {
+    return this.update(id, { status: 'active' });
+  },
+
   async complete(id: string): Promise<Goal> {
     return this.update(id, { status: 'completed', completion: 100 });
+  },
+
+  async addKeyResult(goalId: string, kr: { label: string; current: number; target: number; unit: string }): Promise<KeyResult> {
+    const { data, error } = await supabase
+      .from('key_results')
+      .insert({ goal_id: goalId, ...kr })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateKeyResult(krId: string, updates: Partial<{ label: string; current: number; target: number; unit: string }>): Promise<KeyResult> {
+    const { data, error } = await supabase
+      .from('key_results')
+      .update(updates)
+      .eq('id', krId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteKeyResult(krId: string): Promise<void> {
+    const { error } = await supabase
+      .from('key_results')
+      .delete()
+      .eq('id', krId);
+
+    if (error) throw error;
   },
 };

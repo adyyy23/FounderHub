@@ -1,7 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Users, Target, ChartBar as BarChart2, Lightbulb, Map, Users as Users2, TrendingUp, Settings, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LayoutDashboard, MessageSquare, Users, Target, ChartBar as BarChart2, Lightbulb, Map, Users as Users2, TrendingUp, Settings, LogOut, Loader as Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { investorService } from '@/services/investors';
+import { goalService } from '@/services/goals';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -14,17 +17,53 @@ const navItems = [
   { id: 'team', label: 'Team', icon: Users2, path: '/team' },
 ];
 
-interface SidebarProps {
-  startupHealth?: number;
-  runwayMonths?: number;
-}
+const MONTHLY_BURN = 128000;
 
-export default function Sidebar({ startupHealth = 86, runwayMonths = 14 }: SidebarProps) {
+export default function Sidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
+  const [runwayMonths, setRunwayMonths] = useState<number | null>(null);
+  const [startupHealth, setStartupHealth] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const healthColor = startupHealth >= 80 ? 'text-green-400' : startupHealth >= 60 ? 'text-orange-400' : 'text-red-400';
-  const healthLabel = startupHealth >= 80 ? 'Excellent' : startupHealth >= 60 ? 'Good' : 'Needs Attention';
+  useEffect(() => {
+    loadMetrics();
+  }, []);
+
+  const loadMetrics = async () => {
+    try {
+      const [investorStats, goals] = await Promise.all([
+        investorService.getStats(),
+        goalService.getAll(),
+      ]);
+
+      const runway = investorStats.totalCommitment > 0
+        ? investorStats.totalCommitment / MONTHLY_BURN
+        : 0;
+      setRunwayMonths(Math.round(runway * 10) / 10);
+
+      const activeGoals = goals.filter((g) => g.status === 'active');
+      const avgCompletion = activeGoals.length > 0
+        ? Math.round(activeGoals.reduce((sum, g) => sum + g.completion, 0) / activeGoals.length)
+        : 0;
+
+      let health = 50;
+      health += Math.min(30, avgCompletion * 0.3);
+      health += Math.min(20, investorStats.total * 2);
+      health = Math.min(100, Math.round(health));
+      setStartupHealth(health);
+    } catch {
+      setRunwayMonths(0);
+      setStartupHealth(50);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const health = startupHealth ?? 86;
+  const runway = runwayMonths ?? 14;
+  const healthColor = health >= 80 ? 'text-green-400' : health >= 60 ? 'text-orange-400' : 'text-red-400';
+  const healthLabel = health >= 80 ? 'Excellent' : health >= 60 ? 'Good' : 'Needs Attention';
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[210px] bg-[#111111] border-r border-[#1e1e1e] flex flex-col z-20">
@@ -64,23 +103,31 @@ export default function Sidebar({ startupHealth = 86, runwayMonths = 14 }: Sideb
 
       {/* Runway Widget */}
       <div className="mx-3 mb-3 p-3 bg-[#161616] rounded-xl border border-[#1e1e1e]">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] font-semibold text-[#6b7280] tracking-widest uppercase">Runway</span>
-          <span className="text-[10px] font-semibold text-[#9ca3af]">{runwayMonths} MONTHS</span>
-        </div>
-        <div className="w-full h-1.5 bg-[#2a2a2a] rounded-full mb-2.5">
-          <div
-            className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full"
-            style={{ width: `${Math.min(100, (runwayMonths / 18) * 100)}%` }}
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <TrendingUp size={12} className={healthColor} />
-          <span className="text-xs font-semibold text-white">Health {startupHealth}</span>
-          <span className={cn('ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full', healthColor, 'bg-current/10')}>
-            {healthLabel}
-          </span>
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-2">
+            <Loader2 size={14} className="text-[#6b7280] animate-spin" />
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] font-semibold text-[#6b7280] tracking-widest uppercase">Runway</span>
+              <span className="text-[10px] font-semibold text-[#9ca3af]">{runway > 0 ? `${runway} MONTHS` : 'N/A'}</span>
+            </div>
+            <div className="w-full h-1.5 bg-[#2a2a2a] rounded-full mb-2.5">
+              <div
+                className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full"
+                style={{ width: `${Math.min(100, (runway / 18) * 100)}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <TrendingUp size={12} className={healthColor} />
+              <span className="text-xs font-semibold text-white">Health {health}</span>
+              <span className={cn('ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full', healthColor, 'bg-current/10')}>
+                {healthLabel}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Bottom Actions */}

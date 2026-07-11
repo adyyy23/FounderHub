@@ -24,6 +24,15 @@ const mockGrowthData: GrowthData[] = [
   { month: 'Jun', arr: 4200000, target: 4500000 },
 ];
 
+const variantBData: GrowthData[] = [
+  { month: 'Jan', arr: 600000, target: 900000 },
+  { month: 'Feb', arr: 900000, target: 1300000 },
+  { month: 'Mar', arr: 1400000, target: 1800000 },
+  { month: 'Apr', arr: 2000000, target: 2500000 },
+  { month: 'May', arr: 2800000, target: 3200000 },
+  { month: 'Jun', arr: 3800000, target: 4200000 },
+];
+
 const formatCurrency = (val: number) => {
   if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
   if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`;
@@ -37,6 +46,9 @@ export default function Dashboard() {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [showInsights, setShowInsights] = useState(false);
+  const [variant, setVariant] = useState<'A' | 'B'>(() => {
+    return (localStorage.getItem('dashboardVariant') as 'A' | 'B') || 'A';
+  });
   const [stats, setStats] = useState({
     totalCommitment: 0,
     investorCount: 0,
@@ -104,7 +116,7 @@ export default function Dashboard() {
     );
   }
 
-  const healthScore = Math.min(100, Math.round(70 + stats.goalCompletion * 0.3));
+  const healthScore = Math.min(100, Math.round((variant === 'A' ? 70 : 65) + stats.goalCompletion * (variant === 'A' ? 0.3 : 0.35)));
   const topGoal = goals.find((g) => g.status !== 'archived') || goals[0];
 
   return (
@@ -125,8 +137,8 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center bg-[#161616] border border-[#1e1e1e] rounded-lg p-1">
-          <button className="bg-orange-500 text-white text-xs font-semibold px-4 py-1.5 rounded-md cursor-default">Variant A</button>
-          <button className="text-[#6b7280] text-xs font-semibold px-4 py-1.5 rounded-md hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Variant B</button>
+          <button onClick={() => { setVariant('A'); localStorage.setItem('dashboardVariant', 'A'); }} className={variant === 'A' ? 'bg-orange-500 text-white text-xs font-semibold px-4 py-1.5 rounded-md cursor-pointer transition-colors' : 'text-[#6b7280] text-xs font-semibold px-4 py-1.5 rounded-md hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500'}>Variant A</button>
+          <button onClick={() => { setVariant('B'); localStorage.setItem('dashboardVariant', 'B'); }} className={variant === 'B' ? 'bg-orange-500 text-white text-xs font-semibold px-4 py-1.5 rounded-md cursor-pointer transition-colors' : 'text-[#6b7280] text-xs font-semibold px-4 py-1.5 rounded-md hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500'}>Variant B</button>
         </div>
       </div>
 
@@ -337,7 +349,7 @@ export default function Dashboard() {
           </div>
           <div className="h-[220px] mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockGrowthData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+              <AreaChart data={variant === 'A' ? mockGrowthData : variantBData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="arrGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />

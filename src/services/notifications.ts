@@ -49,4 +49,22 @@ export const notificationService = {
 
     if (error) throw error;
   },
+
+  async markAsUnread(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read_at: null })
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
 };

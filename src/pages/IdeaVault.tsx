@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { List, LayoutGrid, Grid3x3 as Grid3X3, Plus, Zap, ArrowUpRight, Loader as Loader2, CreditCard as Edit2, Trash2, Sparkles } from 'lucide-react';
 import { ideaService, type Idea, type IdeaCategory, type IdeaStatus } from '@/services/ideas';
 import { useToast } from '@/hooks/use-toast';
@@ -419,9 +420,10 @@ export default function IdeaVault() {
             const statusColor = statusColors[status] || statusColors.backlog;
 
             return (
-              <div
+              <Link
                 key={idea.id}
-                className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-2xl p-4 transition-all duration-150 group cursor-pointer"
+                to={`/ideas/${idea.id}`}
+                className="bg-[#141414] border border-[#1e1e1e] hover:border-[#2a2a2a] rounded-2xl p-4 transition-all duration-150 group cursor-pointer block"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -486,7 +488,7 @@ export default function IdeaVault() {
                     <span className="text-[10px] text-[#6b7280]">{statusLabels[idea.status] || idea.status}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
 
