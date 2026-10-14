@@ -2,7 +2,7 @@
 
 > The operating system for founders who ship. Integrate fundraising, growth metrics, and strategic execution into a single high-fidelity command deck.
 
-FounderHub is a production-grade SaaS platform that consolidates the fragmented tools founders juggle daily — investor CRM, OKR tracking, idea management, roadmap planning, team operations, and AI-driven strategic analysis — into one unified workspace.
+FounderHub is a portfolio SaaS project that consolidates the fragmented tools founders juggle daily — investor CRM, OKR tracking, idea management, roadmap planning, team operations, and AI-driven strategic analysis — into one unified workspace.
 
 ## Features
 
@@ -54,7 +54,7 @@ The dev server starts automatically. Open your browser to the displayed URL.
 
 ### Environment Variables
 
-All Supabase credentials are pre-configured. Optional:
+Review `src/lib/supabase.ts` and configure a Supabase project you control before using real data. The repository includes database migrations under `supabase/`. Optional:
 
 ```env
 VITE_GEMINI_API_KEY=your_gemini_api_key  # Optional — enables Gemini-powered AI responses
